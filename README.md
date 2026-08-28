@@ -26,27 +26,25 @@ di commento. È in sola aggiunta: una demo fatta non si cancella.
 
 ## Come si entra
 
-1. **Password del team** — la stessa di Store Tasks, verificata da Supabase Auth.
-   Si chiede una volta sola per telefono: poi la sessione resta.
-2. **Registrazione** — la prima volta scegli il tuo nome e un **codice di 6
-   cifre**. Da un altro telefono ti ritrovi con nome e codice.
+Si apre il sito e si sceglie il proprio nome, poi il **codice di 6 cifre**.
+La prima volta ci si registra: nome e codice, e da un altro telefono ci si
+ritrova con quelli.
+
+Non c'è più la password del team: `senza-password.sql` è stato eseguito e le
+regole valgono anche per chi non ha fatto login. Vuol dire che **chiunque
+conosca l'indirizzo del sito** legge e modifica catalogo, nomi e registro. Il
+codice personale dice chi sei, non protegge i dati. Le tabelle di Store Tasks
+restano dietro il loro login.
 
 Le persone si gestiscono dal **Profilo**: chi aggiungi lì trova già il suo nome
 all'ingresso e sceglie il codice da sé al primo accesso. Chi lo dimentica,
 *Gestisci → Azzera il codice*.
 
-### Togliere la password del team
+### Rimettere la password del team
 
-Si può, ma il sito è pubblico: senza quella password chiunque conosca
-l'indirizzo legge e modifica catalogo, nomi e registro. Se lo si vuole
-comunque, servono due passi nell'ordine:
-
-1. esegui `senza-password.sql` nello SQL Editor (estende le regole a chi non
-   ha fatto login);
-2. metti `RICHIEDI_PASSWORD = false` in cima allo `<script>` di `index.html`.
-
-Per tornare indietro si rimette `true` e si cancellano quelle policy — il file
-le elenca in fondo.
+Due passi, l'inverso di prima: `RICHIEDI_PASSWORD = true` in cima allo
+`<script>` di `index.html`, e i `drop policy` che stanno in fondo a
+`senza-password.sql`.
 
 Il codice non viene mai salvato: si salva solo la sua impronta (SHA-256 con un
 sale casuale, calcolata sul telefono). Serve a riconoscersi tra colleghi, non a

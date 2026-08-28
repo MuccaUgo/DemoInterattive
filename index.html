@@ -160,22 +160,21 @@
     font-size: 1.15rem; line-height: 1; cursor: pointer; color: var(--muted);
   }
   .star.on { color: #f0a500; }
-  .dmeta { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+  .dmeta { display: flex; flex-wrap: wrap; align-items: center; gap: 5px; margin-top: 7px; }
   .dmeta span {
-    font-size: .7rem; font-weight: 700; padding: 3px 9px; border-radius: 999px;
-    text-transform: uppercase; letter-spacing: .04em;
-    background: var(--bg); color: var(--muted);
+    font-size: .73rem; font-weight: 600; padding: 2px 8px; border-radius: 999px;
+    background: var(--bg); color: var(--muted); white-space: nowrap;
   }
   .dmeta span.dur { background: var(--accent-soft); color: var(--accent); }
   .dmeta span.lev-avanzata { background: rgba(211, 63, 73, .14); color: var(--danger); }
   .dmeta span.lev-media { background: var(--warn-soft); color: var(--warn); }
   .dmeta span.fav { background: rgba(240, 165, 0, .16); color: #a06f00; }
   .edit-chip {
-    margin-left: auto; background: none; border: 1px solid var(--line); color: var(--muted);
-    border-radius: 999px; padding: 4px 11px; font-size: .72rem; font-weight: 700;
-    text-transform: uppercase; letter-spacing: .04em; cursor: pointer;
+    margin-left: auto; background: none; border: 1px solid var(--line);
+    border-radius: 999px; padding: 3px 9px; font-size: .78rem; line-height: 1;
+    cursor: pointer; opacity: .75;
   }
-  .edit-chip:hover { border-color: var(--accent); color: var(--accent); }
+  .edit-chip:hover { border-color: var(--accent); opacity: 1; }
   @media (prefers-color-scheme: dark) { .dmeta span.fav { color: #f0a500; } }
   .hook {
     margin-top: 12px; font-size: .95rem; line-height: 1.45; font-style: italic;
@@ -344,10 +343,11 @@ const SUPABASE_URL = "https://nrxnmucuwucfecnphrtf.supabase.co";
 const SUPABASE_KEY = "sb_publishable_OJnekj88Hcc4zCXVo8k9Uw_oSlwAmXm";
 const SHARED_EMAIL = "marcocasati+storetasks@gmail.com"; // utente condiviso in Supabase Auth
 
-// La password del team all'ingresso. Si toglie mettendo false, ma solo dopo
-// aver aperto le policy anche a chi non ha fatto login (senza-password.sql):
-// da quel momento chiunque abbia l'indirizzo del sito legge e scrive.
-const RICHIEDI_PASSWORD = true;
+// La password del team all'ingresso. È false perché senza-password.sql è
+// già stato eseguito: le policy valgono anche per chi non ha fatto login,
+// quindi chiunque abbia l'indirizzo del sito legge e scrive. Per tornare
+// indietro: true qui, e in fondo a quel file ci sono i drop policy.
+const RICHIEDI_PASSWORD = false;
 
 const db = createClient(SUPABASE_URL, SUPABASE_KEY);
 
@@ -356,6 +356,7 @@ const CATS = ["Apple Intelligence", "Fotocamera e Foto", "Accessibilità", "Tast
   "Continuity", "Telefono e contatti", "Organizzazione", "Mac", "iPad", "Altro"];
 const DURATIONS = ["lampo", "breve", "completa"];
 const DUR_HINT = { lampo: "30 secondi", breve: "2 minuti", completa: "5 minuti" };
+const DUR_TEMPO = { lampo: "30 s", breve: "2 min", completa: "5 min" };
 const LEVELS = ["facile", "media", "avanzata"];
 const OUTCOMES = ["wow", "ok", "fiacca"];
 const OUT_COLOR = { wow: "var(--ok)", ok: "var(--accent)", fiacca: "var(--warn)" };
@@ -661,7 +662,7 @@ function render() {
 }
 
 // ── Scheda di una demo ──────────────────────────────────────
-function demoCard(d) {
+function demoCard(d, conCategoria = false) {
   const open = openIds.has(d.id);
   const n = runsOf(d.id).length;
   const last = lastRun(d.id);
@@ -688,11 +689,11 @@ function demoCard(d) {
       <span class="badge ${d.status === "pronta" ? "done" : "off"}">${d.status === "pronta" ? "Pronta" : "Bozza"}</span>
     </div>
     <div class="dmeta">
-      <span>${esc(d.category)}</span>
-      <span class="dur">${esc(d.duration)} · ${DUR_HINT[d.duration] || ""}</span>
+      ${conCategoria ? `<span>${esc(d.category)}</span>` : ""}
+      <span class="dur">${DUR_TEMPO[d.duration] || esc(d.duration)}</span>
       <span class="lev-${esc(d.level)}">${esc(d.level)}</span>
       ${favCount(d.id) ? `<span class="fav">★ ${favCount(d.id)}</span>` : ""}
-      <button class="edit-chip" data-act="edit" data-id="${d.id}">✏️ Modifica</button>
+      <button class="edit-chip" data-act="edit" data-id="${d.id}" title="Modifica" aria-label="Modifica">✏️</button>
     </div>
     ${!open ? "" : `
     ${d.hook ? `<div class="hook">“${esc(d.hook)}”</div>` : ""}
@@ -815,7 +816,7 @@ function renderPreferite(main) {
     <div class="section-head"><h2>Le tue preferite</h2></div>
     <div class="sub" style="margin:0 4px 14px">Le demo che vuoi avere sottomano: quelle che ti riescono
       bene e quelle che stai imparando.</div>
-    ${sorted.length ? sorted.map(demoCard).join("")
+    ${sorted.length ? sorted.map(d => demoCard(d, true)).join("")
       : `<div class="empty">Ancora nessuna preferita.<br>Nell'elenco, tocca la stella accanto al nome di una demo.</div>`}`;
 
   wireCards(main);
