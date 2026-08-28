@@ -410,6 +410,7 @@ async function hashCode(salt, code) {
 }
 
 const isCode = (v) => /^[0-9]{6}$/.test(v);
+// chi non ha ancora scelto il codice ha impronta vuota: né sale né hash
 const hasCode = (p) => !!(p && p.salt && p.code_hash);
 const personByName = (n) => persons.find(p => p.name.toLowerCase() === (n || "").toLowerCase()) || null;
 
@@ -1173,8 +1174,9 @@ function renderProfilo(main) {
         const nome = (fd.get("name") || "").trim();
         if (nome.length < 2) { toast("Scrivi il nome"); return false; }
         if (personByName(nome)) { toast("Questo nome c'è già"); return false; }
-        // senza salt né impronta: il codice arriva al primo accesso
-        const { error } = await db.from("demo_people").insert({ name: nome });
+        // impronta vuota: il codice se lo sceglie la persona al primo accesso
+        const { error } = await db.from("demo_people")
+          .insert({ name: nome, salt: "", code_hash: "" });
         if (error) { toast("Errore nel salvataggio"); return false; }
         toast("Aggiunta");
         await refresh();
@@ -1215,7 +1217,7 @@ function renderProfilo(main) {
           if (reset) reset.onclick = async () => {
             if (!confirm(`Azzerare il codice di ${p.name}? Ne sceglierà uno nuovo al prossimo accesso.`)) return;
             const { error } = await db.from("demo_people")
-              .update({ salt: null, code_hash: null }).eq("id", p.id);
+              .update({ salt: "", code_hash: "" }).eq("id", p.id);
             if (error) { toast("Errore nel salvataggio"); return; }
             if (p.id === meId) forgetMe();
             $("#dlg").close();

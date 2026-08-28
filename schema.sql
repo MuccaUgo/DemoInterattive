@@ -7,8 +7,9 @@
 
 -- Chi usa l'app. Due strade per entrarci: uno si registra da sé, oppure
 -- lo aggiunge chi gestisce la lista dal profilo. In quel secondo caso
--- salt e code_hash restano vuoti finché la persona, al primo accesso,
--- non sceglie il suo codice.
+-- salt e code_hash restano stringhe vuote — nessuna impronta può valere
+-- "vuoto", quindi finché è così l'app chiede alla persona di scegliere
+-- il codice al primo accesso.
 --
 -- Il codice non viene mai salvato: si salva solo la sua impronta
 -- (SHA-256 con un sale casuale), che non si può ricalcolare a ritroso.
@@ -17,12 +18,10 @@
 create table if not exists public.demo_people (
   id uuid primary key default gen_random_uuid(),
   name text not null unique,
-  salt text,
-  code_hash text,
+  salt text not null default '',        -- vuoti finché la persona non
+  code_hash text not null default '',   -- sceglie il codice al primo accesso
   created_at timestamptz not null default now()
 );
-alter table public.demo_people alter column salt      drop not null;
-alter table public.demo_people alter column code_hash drop not null;
 
 -- Una demo = una scheda del catalogo: cosa mostrare, a chi, e come.
 -- I passi stanno in jsonb perché si scrivono e si leggono sempre insieme.
