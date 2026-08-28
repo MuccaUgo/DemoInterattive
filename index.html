@@ -170,6 +170,12 @@
   .dmeta span.lev-avanzata { background: rgba(211, 63, 73, .14); color: var(--danger); }
   .dmeta span.lev-media { background: var(--warn-soft); color: var(--warn); }
   .dmeta span.fav { background: rgba(240, 165, 0, .16); color: #a06f00; }
+  .edit-chip {
+    margin-left: auto; background: none; border: 1px solid var(--line); color: var(--muted);
+    border-radius: 999px; padding: 4px 11px; font-size: .72rem; font-weight: 700;
+    text-transform: uppercase; letter-spacing: .04em; cursor: pointer;
+  }
+  .edit-chip:hover { border-color: var(--accent); color: var(--accent); }
   @media (prefers-color-scheme: dark) { .dmeta span.fav { color: #f0a500; } }
   .hook {
     margin-top: 12px; font-size: .95rem; line-height: 1.45; font-style: italic;
@@ -601,7 +607,8 @@ function renderNav() {
 
 function render() {
   renderNav();
-  $("#tab-title").textContent = tab === "crea" && editingId ? "Modifica la demo" : TITLES[tab];
+  $("#tab-title").textContent = tab === "crea" && editingId
+    ? (demoOf(editingId)?.name || "Modifica la demo") : TITLES[tab];
   $("#whoami-chip").textContent = me;
   const main = $("#main");
   if (!hasSchema) {
@@ -652,6 +659,7 @@ function demoCard(d) {
       <span class="dur">${esc(d.duration)} · ${DUR_HINT[d.duration] || ""}</span>
       <span class="lev-${esc(d.level)}">${esc(d.level)}</span>
       ${favCount(d.id) ? `<span class="fav">★ ${favCount(d.id)}</span>` : ""}
+      <button class="edit-chip" data-act="edit" data-id="${d.id}">✏️ Modifica</button>
     </div>
     ${!open ? "" : `
     ${d.hook ? `<div class="hook">“${esc(d.hook)}”</div>` : ""}
@@ -666,7 +674,7 @@ function demoCard(d) {
     <div class="acts">
       <button class="grow" data-act="run" data-id="${d.id}">✓ L'ho fatta</button>
       <button class="ghost small" data-act="status" data-id="${d.id}">${d.status === "pronta" ? "Rimetti in bozza" : "Segna pronta"}</button>
-      <button class="ghost small" data-act="edit" data-id="${d.id}">Modifica</button>
+      <button class="ghost small" data-act="edit" data-id="${d.id}">✏️ Modifica</button>
     </div>`}
   </div>`;
 }

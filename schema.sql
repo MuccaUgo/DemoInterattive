@@ -23,7 +23,9 @@ create table if not exists public.demo_people (
 create table if not exists public.demos (
   id uuid primary key default gen_random_uuid(),
   name text not null,
-  category text not null default 'iPhone',   -- iPhone · iPad · Mac · Watch · Audio · Servizi · Altro
+  category text not null default 'Altro',    -- l'argomento: Apple Intelligence · Fotocamera e Foto ·
+                                             -- Accessibilità · Tastiera e testo · Continuity ·
+                                             -- Telefono e contatti · Organizzazione · Mac · iPad · Altro
   hook text,                                 -- la frase con cui si apre
   who text,                                  -- a quale cliente sta bene
   duration text not null default 'breve',    -- lampo · breve · completa

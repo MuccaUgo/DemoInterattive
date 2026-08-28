@@ -37,9 +37,10 @@ proteggere segreti: la porta di casa resta la password del team.
 ## Setup
 
 ### 1. Database
-Nel progetto Supabase → **SQL Editor** → incolla `schema.sql` → **Run**.
-Si può rieseguire senza danni. Il primo giro inserisce le tredici demo raccolte
-dal team; da lì in poi il catalogo lo scrive chi lo usa.
+Già fatto sul progetto **StoreTool**: le tabelle e le tredici demo di partenza
+ci sono. Il file `schema.sql` resta qui come sorgente: serve per rifare il
+database da zero o per un secondo ambiente. Si può rieseguire senza danni —
+se il catalogo non è vuoto, non tocca niente.
 
 Tabelle: `demo_people` (chi si è registrato), `demos` (le schede),
 `demo_runs` (le demo fatte, in sola aggiunta), `demo_favorites` (le preferite).
