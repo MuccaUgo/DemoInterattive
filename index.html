@@ -344,6 +344,11 @@ const SUPABASE_URL = "https://nrxnmucuwucfecnphrtf.supabase.co";
 const SUPABASE_KEY = "sb_publishable_OJnekj88Hcc4zCXVo8k9Uw_oSlwAmXm";
 const SHARED_EMAIL = "marcocasati+storetasks@gmail.com"; // utente condiviso in Supabase Auth
 
+// La password del team all'ingresso. Si toglie mettendo false, ma solo dopo
+// aver aperto le policy anche a chi non ha fatto login (senza-password.sql):
+// da quel momento chiunque abbia l'indirizzo del sito legge e scrive.
+const RICHIEDI_PASSWORD = true;
+
 const db = createClient(SUPABASE_URL, SUPABASE_KEY);
 
 // ── Stato ───────────────────────────────────────────────────
@@ -1240,11 +1245,19 @@ function renderProfilo(main) {
   });
 
   $("#logout").onclick = async () => {
-    if (!confirm("Esci da questo telefono? Per rientrare servono la password del team e il tuo codice.")) return;
+    const avviso = RICHIEDI_PASSWORD
+      ? "Esci da questo telefono? Per rientrare servono la password del team e il tuo codice."
+      : "Esci da questo telefono? Per rientrare serve il tuo codice.";
+    if (!confirm(avviso)) return;
     forgetMe();
-    await db.auth.signOut();
-    rtChannel = null;
-    show("login");
+    if (RICHIEDI_PASSWORD) {
+      await db.auth.signOut();
+      rtChannel = null;
+      show("login");
+      return;
+    }
+    await loadAll();
+    showWho(persons.length ? "pick" : "register");
   };
 }
 
@@ -1269,8 +1282,12 @@ function openDialog(title, fieldsHtml, onSubmit, onOpen) {
 }
 
 // ── Avvio ───────────────────────────────────────────────────
-const { data: { session } } = await db.auth.getSession();
-if (session) { await start(); } else { show("login"); }
+if (!RICHIEDI_PASSWORD) {
+  await start();
+} else {
+  const { data: { session } } = await db.auth.getSession();
+  if (session) { await start(); } else { show("login"); }
+}
 </script>
 </body>
 </html>
