@@ -5,16 +5,21 @@
 -- Non tocca le tabelle di Store Tasks.
 -- ============================================================
 
--- Chi usa l'app. Ci si registra la prima volta scegliendo un nome e un
--- codice di 6 cifre. Il codice non viene mai salvato: si salva solo la
--- sua impronta (SHA-256 con un sale casuale), che non si può ricalcolare
--- a ritroso. Serve a riconoscersi da un altro telefono, non a proteggere
--- segreti: la porta di casa resta la password del team.
+-- Chi usa l'app. Due strade per entrarci: uno si registra da sé, oppure
+-- lo aggiunge chi gestisce la lista dal profilo. In quel secondo caso
+-- salt e code_hash restano stringhe vuote — nessuna impronta può valere
+-- "vuoto", quindi finché è così l'app chiede alla persona di scegliere
+-- il codice al primo accesso.
+--
+-- Il codice non viene mai salvato: si salva solo la sua impronta
+-- (SHA-256 con un sale casuale), che non si può ricalcolare a ritroso.
+-- Serve a riconoscersi da un altro telefono, non a proteggere segreti:
+-- la porta di casa resta la password del team.
 create table if not exists public.demo_people (
   id uuid primary key default gen_random_uuid(),
   name text not null unique,
-  salt text not null,
-  code_hash text not null,
+  salt text not null default '',        -- vuoti finché la persona non
+  code_hash text not null default '',   -- sceglie il codice al primo accesso
   created_at timestamptz not null default now()
 );
 

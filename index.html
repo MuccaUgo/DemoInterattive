@@ -244,6 +244,14 @@
   .bar i.o { background: var(--accent); }
   .bar i.f { background: var(--warn); }
   .rank-num { font-size: .78rem; color: var(--muted); font-variant-numeric: tabular-nums; flex: none; min-width: 40px; text-align: right; }
+  .t-row {
+    display: flex; align-items: center; gap: 10px; padding: 11px 13px; background: var(--card);
+    border: 1px solid var(--line); border-radius: 14px; margin-bottom: 8px;
+  }
+  .t-txt { flex: 1; min-width: 0; }
+  .t-name { font-size: .96rem; font-weight: 600; display: block; }
+  .t-meta { font-size: .75rem; color: var(--muted); display: block; }
+  .who-list em { display: block; font-style: normal; font-size: .72rem; color: var(--muted); margin-top: 2px; }
   .feed { display: flex; flex-direction: column; }
   .fitem { display: flex; gap: 12px; padding-bottom: 15px; position: relative; }
   .fitem:not(:last-child)::before {
@@ -402,6 +410,8 @@ async function hashCode(salt, code) {
 }
 
 const isCode = (v) => /^[0-9]{6}$/.test(v);
+// chi non ha ancora scelto il codice ha impronta vuota: né sale né hash
+const hasCode = (p) => !!(p && p.salt && p.code_hash);
 const personByName = (n) => persons.find(p => p.name.toLowerCase() === (n || "").toLowerCase()) || null;
 
 function showWho(state, name = "") {
@@ -414,23 +424,40 @@ function renderWho() {
   const box = $("#who-box");
 
   if (whoState === "code") {
+    const p = personByName(whoName);
+    // chi è stato aggiunto dal team non ha ancora un codice: se lo sceglie adesso
+    const primo = !hasCode(p);
     box.innerHTML = `
       <div class="logo">🔢</div>
       <h1>Ciao ${esc(whoName)}</h1>
-      <p>Scrivi il codice di 6 cifre che hai scelto quando ti sei registrato.</p>
+      <p>${primo
+        ? "È il tuo primo accesso: scegli un codice di 6 cifre. Ti servirà per ritrovarti da un altro telefono."
+        : "Scrivi il codice di 6 cifre che hai scelto."}</p>
       <form id="who-form">
         <input type="password" id="who-code" inputmode="numeric" pattern="[0-9]*" maxlength="6"
-          placeholder="••••••" autocomplete="off" required>
-        <button type="submit">Entra</button>
+          placeholder="${primo ? "Codice di 6 cifre" : "••••••"}" autocomplete="off" required>
+        ${primo ? `<input type="password" id="who-code2" inputmode="numeric" pattern="[0-9]*" maxlength="6"
+          placeholder="Ripeti il codice" autocomplete="off" required>` : ""}
+        <button type="submit">${primo ? "Scegli il codice ed entra" : "Entra"}</button>
       </form>
       <button type="button" class="linkish" id="who-back">‹ Non sono io</button>`;
     $("#who-form").onsubmit = async (e) => {
       e.preventDefault();
-      const p = personByName(whoName);
+      const person = personByName(whoName);
+      if (!person) { showWho("pick"); return; }
       const code = $("#who-code").value.trim();
-      if (!p) { showWho("pick"); return; }
-      if (await hashCode(p.salt, code) !== p.code_hash) { toast("Codice non valido"); return; }
-      setMe(p);
+      if (primo) {
+        if (!isCode(code)) { toast("Il codice è di 6 cifre"); return; }
+        if (code !== $("#who-code2").value.trim()) { toast("I due codici non coincidono"); return; }
+        const salt = newSalt();
+        const { error } = await db.from("demo_people")
+          .update({ salt, code_hash: await hashCode(salt, code) }).eq("id", person.id);
+        if (error) { toast("Errore nel salvataggio"); return; }
+      } else if (await hashCode(person.salt, code) !== person.code_hash) {
+        toast("Codice non valido"); return;
+      }
+      setMe(person);
+      await loadAll();
       enterApp();
     };
     $("#who-back").onclick = () => showWho("pick");
@@ -481,7 +508,8 @@ function renderWho() {
     <h1>Chi sei?</h1>
     <p>${persons.length ? "Scegli il tuo nome, poi il codice." : "Nessuno si è ancora registrato: comincia tu."}</p>
     ${persons.length ? `<div class="who-list">${persons.map(p =>
-      `<button type="button" data-who="${esc(p.name)}">${esc(p.name)}</button>`).join("")}</div>` : ""}
+      `<button type="button" data-who="${esc(p.name)}">${esc(p.name)}${
+        hasCode(p) ? "" : `<em>primo accesso</em>`}</button>`).join("")}</div>` : ""}
     <button type="button" class="ghost" id="who-new" style="margin-top:16px;width:100%">Sono nuovo, registrami</button>`;
   box.querySelectorAll("[data-who]").forEach(b => {
     b.onclick = () => showWho("code", b.dataset.who);
@@ -1065,6 +1093,22 @@ function renderProfilo(main) {
     ${mai.length ? `<div class="sub" style="margin:2px 4px 8px">Scritte ma mai fatte: o non servono, o nessuno se le ricorda.</div>
       <div class="chips">${mai.map(d => `<button type="button" class="fchip" data-go="${d.id}">${esc(d.name)}</button>`).join("")}</div>` : ""}
 
+    <div class="section-head" style="margin-top:24px"><h2>Chi usa l'app</h2>
+      <button class="small" id="add-person">+ Aggiungi</button></div>
+    <div class="sub" style="margin:0 4px 10px">Chi aggiungi qui trova già il suo nome all'ingresso:
+      sceglierà il codice da sé al primo accesso.</div>
+    ${persons.map(p => {
+      const suoi = runs.filter(r => r.actor_name === p.name).length;
+      return `<div class="t-row">
+        <span class="t-txt">
+          <span class="t-name">${esc(p.name)}${p.id === meId ? " · tu" : ""}</span>
+          <span class="t-meta">${hasCode(p) ? "codice impostato" : "deve ancora scegliere il codice"}
+            · ${suoi} demo fatte</span>
+        </span>
+        <button class="ghost small" data-person="${p.id}">Gestisci</button>
+      </div>`;
+    }).join("")}
+
     <div class="row" style="margin-top:26px">
       <button class="ghost small" id="logout">Esci dall'app</button>
     </div>`;
@@ -1120,6 +1164,81 @@ function renderProfilo(main) {
   main.querySelectorAll("[data-go]").forEach(b => {
     b.onclick = () => { catFilter = "tutte"; query = ""; openIds.add(b.dataset.go); goTab("elenco"); };
   });
+  $("#add-person").onclick = () => {
+    openDialog("Aggiungi una persona", `
+      <div class="field"><label>Nome *</label>
+        <input type="text" name="name" placeholder="es. Vladi" required></div>
+      <div class="sub" style="margin-top:8px">Il codice se lo sceglie da sé al primo accesso:
+        tu non devi saperlo.</div>`,
+      async (fd) => {
+        const nome = (fd.get("name") || "").trim();
+        if (nome.length < 2) { toast("Scrivi il nome"); return false; }
+        if (personByName(nome)) { toast("Questo nome c'è già"); return false; }
+        // impronta vuota: il codice se lo sceglie la persona al primo accesso
+        const { error } = await db.from("demo_people")
+          .insert({ name: nome, salt: "", code_hash: "" });
+        if (error) { toast("Errore nel salvataggio"); return false; }
+        toast("Aggiunta");
+        await refresh();
+      });
+  };
+
+  main.querySelectorAll("[data-person]").forEach(b => {
+    b.onclick = () => {
+      const p = persons.find(x => x.id === b.dataset.person);
+      if (!p) return;
+      const suoi = runs.filter(r => r.actor_name === p.name).length;
+      openDialog(`Gestisci ${p.name}`, `
+        <div class="field"><label>Nome</label>
+          <input type="text" name="name" value="${esc(p.name)}" required></div>
+        <div class="sub" style="margin-top:8px">${suoi} demo fatte · ${
+          hasCode(p) ? "codice impostato" : "deve ancora scegliere il codice"}</div>
+        <div class="row" style="margin-top:14px;gap:8px">
+          ${hasCode(p) ? `<button type="button" class="ghost small" id="reset-code">Azzera il codice</button>` : ""}
+          <button type="button" class="danger small" id="del-person">Elimina</button>
+        </div>
+        <div class="sub" style="margin-top:8px">Azzerando il codice, la persona ne sceglie uno nuovo
+          al prossimo accesso. Eliminandola, le demo che ha fatto restano nel registro.</div>`,
+        async (fd) => {
+          const nuovo = (fd.get("name") || "").trim();
+          const vecchio = p.name;   // da leggere prima: dopo l'update non è più il suo
+          if (nuovo.length < 2) { toast("Scrivi il nome"); return false; }
+          if (nuovo === vecchio) return;
+          if (personByName(nuovo)) { toast("Questo nome c'è già"); return false; }
+          const { error } = await db.from("demo_people").update({ name: nuovo }).eq("id", p.id);
+          if (error) { toast("Errore nel salvataggio"); return false; }
+          await db.from("demo_favorites").update({ person_name: nuovo }).eq("person_name", vecchio);
+          if (p.id === meId) { me = nuovo; localStorage.setItem("demo-whoami", me); }
+          toast("Nome aggiornato");
+          await refresh();
+        },
+        (form) => {
+          const reset = form.querySelector("#reset-code");
+          if (reset) reset.onclick = async () => {
+            if (!confirm(`Azzerare il codice di ${p.name}? Ne sceglierà uno nuovo al prossimo accesso.`)) return;
+            const { error } = await db.from("demo_people")
+              .update({ salt: "", code_hash: "" }).eq("id", p.id);
+            if (error) { toast("Errore nel salvataggio"); return; }
+            if (p.id === meId) forgetMe();
+            $("#dlg").close();
+            toast("Codice azzerato");
+            await refresh();
+          };
+          form.querySelector("#del-person").onclick = async () => {
+            const nome = p.name;
+            if (!confirm(`Eliminare ${nome}? Le demo che ha fatto restano nel registro, a suo nome.`)) return;
+            const { error } = await db.from("demo_people").delete().eq("id", p.id);
+            if (error) { toast("Errore nell'eliminazione"); return; }
+            await db.from("demo_favorites").delete().eq("person_name", nome);
+            if (p.id === meId) { forgetMe(); $("#dlg").close(); await loadAll(); showWho("pick"); return; }
+            $("#dlg").close();
+            toast("Eliminata");
+            await refresh();
+          };
+        });
+    };
+  });
+
   $("#logout").onclick = async () => {
     if (!confirm("Esci da questo telefono? Per rientrare servono la password del team e il tuo codice.")) return;
     forgetMe();
