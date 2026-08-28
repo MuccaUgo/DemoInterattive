@@ -5,6 +5,19 @@
 -- Non tocca le tabelle di Store Tasks.
 -- ============================================================
 
+-- Chi usa l'app. Ci si registra la prima volta scegliendo un nome e un
+-- codice di 6 cifre. Il codice non viene mai salvato: si salva solo la
+-- sua impronta (SHA-256 con un sale casuale), che non si può ricalcolare
+-- a ritroso. Serve a riconoscersi da un altro telefono, non a proteggere
+-- segreti: la porta di casa resta la password del team.
+create table if not exists public.demo_people (
+  id uuid primary key default gen_random_uuid(),
+  name text not null unique,
+  salt text not null,
+  code_hash text not null,
+  created_at timestamptz not null default now()
+);
+
 -- Una demo = una scheda del catalogo: cosa mostrare, a chi, e come.
 -- I passi stanno in jsonb perché si scrivono e si leggono sempre insieme.
 create table if not exists public.demos (
@@ -15,9 +28,9 @@ create table if not exists public.demos (
   who text,                                  -- a quale cliente sta bene
   duration text not null default 'breve',    -- lampo · breve · completa
   level text not null default 'facile',      -- facile · media · avanzata
-  steps jsonb not null default '[]'::jsonb,  -- i passi, in ordine
+  steps jsonb not null default '[]'::jsonb,  -- i passaggi da dire al cliente, in ordine
   needs text,                                -- cosa serve prima di iniziare
-  wow text,                                  -- il momento che fa effetto
+  benefits jsonb not null default '[]'::jsonb, -- i vantaggi con cui si chiude
   owner text,                                -- chi tiene aggiornata la scheda
   status text not null default 'bozza',      -- bozza · pronta · ritirata
   created_by text,                           -- chi l'ha scritta
@@ -27,6 +40,7 @@ create table if not exists public.demos (
 );
 create index if not exists demos_lookup on public.demos (status, category, position);
 alter table public.demos add column if not exists created_by text;
+alter table public.demos add column if not exists benefits jsonb not null default '[]'::jsonb;
 
 -- Ogni volta che una demo viene fatta davvero in reparto.
 -- In sola aggiunta: è il registro che dice quali demo vivono
@@ -55,15 +69,19 @@ create index if not exists demo_favorites_lookup on public.demo_favorites (perso
 -- ------------------------------------------------------------
 -- Accesso: si legge e si scrive solo dopo il login
 -- ------------------------------------------------------------
+alter table public.demo_people    enable row level security;
 alter table public.demos          enable row level security;
 alter table public.demo_runs      enable row level security;
 alter table public.demo_favorites enable row level security;
 
+drop policy if exists "people all"  on public.demo_people;
 drop policy if exists "demos all"   on public.demos;
 drop policy if exists "runs read"   on public.demo_runs;
 drop policy if exists "runs insert" on public.demo_runs;
 drop policy if exists "favs all"    on public.demo_favorites;
 
+create policy "people all"  on public.demo_people
+  for all to authenticated using (true) with check (true);
 create policy "demos all"   on public.demos
   for all to authenticated using (true) with check (true);
 create policy "runs read"   on public.demo_runs
@@ -77,6 +95,11 @@ create policy "favs all"    on public.demo_favorites
 -- ------------------------------------------------------------
 -- Aggiornamenti in tempo reale sugli altri telefoni
 -- ------------------------------------------------------------
+do $$
+begin
+  alter publication supabase_realtime add table public.demo_people;
+exception when duplicate_object then null;
+end $$;
 do $$
 begin
   alter publication supabase_realtime add table public.demos;
@@ -93,154 +116,225 @@ begin
 exception when duplicate_object then null;
 end $$;
 
+
 -- ------------------------------------------------------------
--- Il catalogo di partenza. Si riscrive tutto dall'app:
--- serve solo a non aprire il sito su una pagina vuota.
+-- Il catalogo di partenza: le demo raccolte dal team, riscritte
+-- come si dicono al cliente. Ogni scheda chiude sui vantaggi.
+-- Si corregge tutto dall'app: qui serve solo a non partire vuoti.
 -- ------------------------------------------------------------
 do $$
 begin
   if exists (select 1 from public.demos) then return; end if;
 
   insert into public.demos
-    (name, category, hook, who, duration, level, steps, needs, wow, status, position)
+    (name, category, hook, who, duration, level, steps, benefits, needs, status, position)
   values
-  ('Intelligenza visiva', 'iPhone',
-   'Hai già l''iPhone? Guarda cosa fa la fotocamera adesso.',
-   'Chi entra a curiosare, anche senza un modello in mente',
+
+  ('Intelligenza visiva e annunci', 'Apple Intelligence',
+   'Se dovessi rivendere quella giacca online, sapresti come descriverla?',
+   'Chi vende sui marketplace, genitori con i vestiti dei figli da rivendere',
    'lampo', 'facile',
    to_jsonb(array[
-     'Tieni premuto il tasto Controllo fotocamera',
-     'Inquadra un oggetto del reparto e chiedi che cos''è',
-     'Tocca Cerca per trovarlo online in un secondo',
-     'Ripeti su un testo: traduzione immediata'
+     'Chiedi al cliente di prendere il suo iPhone e tenere premuto il tasto Controllo fotocamera',
+     'Fagli inquadrare un oggetto che ha con sé — una giacca, una borsa — e scattare',
+     'Digli di toccare Chiedi e di farsi scrivere la descrizione per l''annuncio'
    ]),
-   'iPhone con Apple Intelligence attiva e connessione',
-   'Il telefono riconosce quello che stai guardando: nessuno se lo aspetta',
+   to_jsonb(array[
+     'Pubblichi l''annuncio in un minuto invece che in un quarto d''ora',
+     'La descrizione è completa e vende meglio, anche quando non sai da dove iniziare'
+   ]),
+   'iPhone del cliente con Apple Intelligence attiva e connessione',
    'pronta', 1),
 
-  ('Doppia acquisizione', 'iPhone',
-   'Ti faccio vedere come si riprende una scena e la faccia di chi la guarda.',
-   'Genitori, chi viaggia, chi fa video per i social',
+  ('Fotocamera con inversione colori', 'Accessibilità',
+   'Ti faccio vedere come si trova quello che a occhio nudo non si vede?',
+   'Chi ha animali, chi fatica a distinguere i dettagli, chi lavora con oggetti scuri',
    'breve', 'facile',
    to_jsonb(array[
-     'Apri Fotocamera e passa a Video',
-     'Attiva la doppia registrazione',
-     'Riprendi il cliente mentre inquadra qualcosa dietro di sé',
-     'Riguarda subito il video con le due immagini insieme'
+     'Chiedi al cliente di aprire Impostazioni e andare in Accessibilità',
+     'Guidalo in Schermo e dimensione testo e fagli attivare Inversione classica',
+     'Digli di aprire la fotocamera e inquadrare un tessuto scuro o il pelo di un animale'
    ]),
-   'iPhone con doppia acquisizione, spazio libero per registrare',
-   'Si rivede nel video insieme a quello che stava guardando',
+   to_jsonb(array[
+     'Trovi forasacchi, schegge e macchie che sul colore normale spariscono',
+     'Lo schermo diventa più leggibile quando gli occhi sono stanchi'
+   ]),
+   'Un iPhone qualsiasi. A fine demo ricordati di rimettere l''inversione su No',
    'pronta', 2),
 
-  ('Selfie con inquadratura automatica', 'iPhone',
-   'Fai una foto a tutto il gruppo senza chiedere a nessuno di stringersi.',
-   'Famiglie, coppie, gruppi di amici',
+  ('Sostituzione testo', 'Tastiera e testo',
+   'Quante volte al mese scrivi per intero il tuo codice fiscale?',
+   'Chi ripete sempre gli stessi dati: IBAN, codice fiscale, indirizzo, email',
    'lampo', 'facile',
    to_jsonb(array[
-     'Apri Fotocamera e passa alla frontale',
-     'Scatta con una persona, poi fatti raggiungere da un''altra',
-     'Mostra l''inquadratura che si allarga da sola',
-     'Ruota l''iPhone: la foto resta dritta'
+     'Chiedi al cliente di aprire Impostazioni, poi Generali e Tastiera',
+     'Fagli toccare Sostituzione testo e poi il +',
+     'Digli di scrivere una frase che usa spesso e la sua abbreviazione, poi di provarla in Note'
    ]),
-   'iPhone con fotocamera frontale a inquadratura automatica',
-   'La foto si allarga da sola quando arriva qualcun altro',
+   to_jsonb(array[
+     'Il codice fiscale o l''IBAN escono con tre lettere, senza sbagliare una cifra',
+     'Vale in tutte le app e su tutti i dispositivi con lo stesso ID Apple'
+   ]),
+   'Un iPhone qualsiasi: la funzione c''è da sempre',
    'pronta', 3),
 
-  ('Ripulisci in Foto', 'iPhone',
-   'Hai una foto rovinata da qualcuno che passava? Provala qui.',
-   'Chi è appena tornato da un viaggio, chi mostra le foto dei figli',
-   'breve', 'facile',
+  ('La continuità del copia e incolla', 'Continuity',
+   'Ti capita di mandarti dei link da solo, per ritrovarli sul computer?',
+   'Chi ha già l''iPhone e sta guardando un Mac',
+   'breve', 'media',
    to_jsonb(array[
-     'Apri una foto con un elemento di troppo sullo sfondo',
-     'Tocca Modifica, poi Ripulisci',
-     'Passa il dito sull''elemento da togliere',
-     'Confronta prima e dopo tenendo premuto sulla foto'
+     'Chiedi al cliente di copiare un link o due righe di testo dal suo iPhone',
+     'Portalo davanti al Mac in esposizione e apri Note',
+     'Digli di incollare: quello che ha copiato sul telefono è già lì'
    ]),
-   'Una foto di prova già pronta sul dispositivo',
-   'Il prima/dopo tenendo premuto: è lì che si sente il wow',
+   to_jsonb(array[
+     'Niente più messaggi mandati a te stesso per spostare due righe',
+     'Funziona anche con foto e file: si copia di là, si incolla di qua'
+   ]),
+   'Mac e iPhone con lo stesso ID Apple, Bluetooth e Wi-Fi accesi',
    'pronta', 4),
 
-  ('Note: registra e riassumi', 'iPhone',
-   'Quante volte prendi appunti mentre qualcuno parla?',
-   'Studenti, chi passa la giornata in riunione',
-   'breve', 'media',
+  ('Intelligenza visiva in cucina', 'Apple Intelligence',
+   'Hai ricette scritte a mano che non hai mai digitalizzato?',
+   'Chi cucina, chi ha ospiti con esigenze alimentari diverse',
+   'breve', 'facile',
    to_jsonb(array[
-     'Apri Note e crea una nota nuova',
-     'Avvia la registrazione e fai parlare il cliente per trenta secondi',
-     'Mostra la trascrizione che compare mentre parla',
-     'Chiedi il riassunto e leggilo insieme a lui'
+     'Chiedi al cliente di attivare Intelligenza visiva tenendo premuto il tasto Controllo fotocamera',
+     'Fagli inquadrare una ricetta scritta a mano, un menù o un''etichetta',
+     'Digli di toccare Chiedi e domandare una variante: senza glutine, vegetariana, per sei persone'
    ]),
-   'iPhone con Apple Intelligence in italiano, angolo non troppo rumoroso',
-   'Sente la propria voce diventare testo e poi riassunto',
+   to_jsonb(array[
+     'La ricetta della nonna diventa una versione per chi ha intolleranze, in pochi secondi',
+     'Funziona anche al ristorante o al supermercato, su qualsiasi etichetta'
+   ]),
+   'iPhone con Apple Intelligence attiva. Tieni una ricetta stampata sotto il banco',
    'pronta', 5),
 
-  ('Cerca nelle foto: gli screenshot', 'iPhone',
-   'Quanti screenshot hai nel rullino? Proviamo a trovarne uno.',
-   'Chi ha il telefono pieno e non trova mai niente',
+  ('Intelligenza visiva e sneakers', 'Apple Intelligence',
+   'Ti è mai capitato di vedere delle scarpe per strada e non sapere che modello fossero?',
+   'Ragazzi, chi segue le mode, chi compra online',
    'lampo', 'facile',
    to_jsonb(array[
-     'Apri Foto e vai su Cerca',
-     'Scrivi una parola che sta dentro uno screenshot',
-     'Mostra il risultato: cerca anche il testo nelle immagini',
-     'Ripeti con una parola scelta dal cliente'
+     'Chiedi al cliente di attivare Intelligenza visiva dal tasto Controllo fotocamera',
+     'Fagli inquadrare le sue scarpe — o le tue',
+     'Digli di toccare Cerca e guardare modello e prezzi che compaiono'
    ]),
-   'Un dispositivo demo con qualche screenshot di prova',
-   'Trova il testo dentro le immagini, non solo il nome del file',
+   to_jsonb(array[
+     'Scopri modello e prezzo di quello che vedi, senza chiedere a nessuno',
+     'Confronti dove conviene comprarlo prima di decidere'
+   ]),
+   'iPhone con Apple Intelligence attiva e connessione',
    'pronta', 6),
 
-  ('Matematica in Note con Apple Pencil', 'iPad',
-   'Scrivi un conto a mano e guarda cosa succede.',
-   'Studenti, genitori che comprano per la scuola',
-   'breve', 'media',
+  ('Trovare i contatti dal tastierino', 'Telefono e contatti',
+   'Come cerchi un contatto quando hai fretta e una mano sola?',
+   'Chi ha la rubrica piena, chi chiama in auto o mentre cammina',
+   'lampo', 'facile',
    to_jsonb(array[
-     'Apri Note su iPad con Apple Pencil',
-     'Scrivi a mano un''espressione e chiudila con l''uguale',
-     'Il risultato compare con la tua calligrafia',
-     'Cambia un numero: il risultato si aggiorna da solo'
+     'Chiedi al cliente di aprire Telefono e andare su Tastierino',
+     'Digli di comporre le lettere di un nome usando i tasti con le lettere corrispondenti',
+     'Fagli toccare il contatto che compare per chiamare'
    ]),
-   'iPad con Apple Pencil abbinata e carica',
-   'La calligrafia del cliente che si completa da sola',
+   to_jsonb(array[
+     'Trovi la persona senza scorrere la rubrica e senza uscire dal tastierino',
+     'Ci arrivi con una mano sola, mentre stai facendo altro'
+   ]),
+   'Un iPhone con qualche contatto in rubrica',
    'pronta', 7),
 
-  ('iPhone sul Mac', 'Mac',
-   'Ti serve una cosa che hai sul telefono mentre lavori al Mac?',
-   'Chi valuta un Mac e ha già un iPhone',
-   'breve', 'media',
+  ('Promemoria condivisi', 'Organizzazione',
+   'Chi fa la spesa a casa tua? E come sapete cosa manca?',
+   'Famiglie, coppie, coinquilini',
+   'breve', 'facile',
    to_jsonb(array[
-     'Apri iPhone Mirroring sul Mac',
-     'Mostra il telefono che compare sullo schermo',
-     'Apri un''app dal Mac usando trackpad e tastiera',
-     'Trascina un file tra i due dispositivi'
+     'Chiedi al cliente di aprire Promemoria e creare un nuovo elenco',
+     'Fagli dare un nome all''elenco — Spesa va benissimo — e aggiungere due voci',
+     'Digli di toccare il pulsante di condivisione e mandarlo a una persona di casa'
    ]),
-   'Mac e iPhone con lo stesso ID Apple sulla stessa rete',
-   'Usa il telefono dal Mac senza toccarlo: la continuità si vede',
+   to_jsonb(array[
+     'Chi passa al supermercato vede la lista aggiornata mentre gli altri la scrivono',
+     'Le voci spuntate spariscono per tutti: niente doppioni'
+   ]),
+   'iPhone del cliente con iCloud attivo',
    'pronta', 8),
 
-  ('Doppio tocco su Apple Watch', 'Watch',
-   'Hai le mani occupate? Guarda come si risponde così.',
-   'Chi corre, chi ha bambini in braccio, chi cucina',
+  ('Intelligenza visiva e alimenti', 'Apple Intelligence',
+   'Quando compri online, ti chiedi mai se esiste un''alternativa più sana?',
+   'Chi fa la spesa online, chi sta attento a cosa mangia',
    'lampo', 'facile',
    to_jsonb(array[
-     'Fai indossare l''Apple Watch al cliente',
-     'Mostra il doppio tocco di indice e pollice',
-     'Rispondi a una notifica senza usare l''altra mano',
-     'Scorri la Vista Smart con lo stesso gesto'
+     'Chiedi al cliente di fare uno screenshot di un prodotto, anche dal sito che ha già aperto',
+     'Sullo screenshot, fagli toccare Chiedi',
+     'Digli di domandare quali sono le alternative più salutari'
    ]),
-   'Apple Watch con doppio tocco, allacciato al polso del cliente',
-   'Comanda l''orologio senza toccarlo',
+   to_jsonb(array[
+     'Ricevi una risposta sul prodotto che hai davanti, non una ricerca generica',
+     'Vale su qualsiasi schermata: prodotti, menù, etichette'
+   ]),
+   'iPhone con Apple Intelligence attiva e connessione',
    'pronta', 9),
 
-  ('Cancellazione del rumore in reparto', 'Audio',
-   'Senti quanto è rumoroso qui? Prova a spegnerlo.',
-   'Chiunque passi vicino al banco degli accessori',
+  ('Intelligenza visiva e libri', 'Apple Intelligence',
+   'Quando finisci un libro che ti è piaciuto, come scegli il prossimo?',
+   'Chi legge, chi cerca un regalo',
    'lampo', 'facile',
    to_jsonb(array[
-     'Fai indossare gli AirPods al cliente',
-     'Parti in modalità Trasparenza, con il rumore del negozio',
-     'Passa alla cancellazione del rumore e stai zitto tre secondi',
-     'Torna in Trasparenza e fai sentire la differenza'
+     'Chiedi al cliente di attivare Intelligenza visiva dal tasto Controllo fotocamera',
+     'Fagli scattare una foto alla copertina di un libro',
+     'Digli di chiedere altri titoli con lo stesso stile'
    ]),
-   'AirPods carichi e igienizzati, abbinati a un dispositivo demo',
-   'I tre secondi di silenzio in mezzo al negozio',
-   'pronta', 10);
+   to_jsonb(array[
+     'Trovi la prossima lettura in pochi secondi, partendo da una che ti è piaciuta',
+     'Lo stesso gesto vale per film, dischi e videogiochi'
+   ]),
+   'iPhone con Apple Intelligence attiva. Tieni un libro sul banco',
+   'pronta', 10),
+
+  ('Cartelle personalizzate', 'Mac',
+   'Quando apri il Finder, trovi subito quello che cerchi?',
+   'Studenti, chi lavora con tanti file, chi condivide il Mac in famiglia',
+   'breve', 'facile',
+   to_jsonb(array[
+     'Chiedi al cliente di aprire una cartella sul Mac in esposizione',
+     'Guidalo su Personalizza cartella',
+     'Fagli scegliere colore e icona, poi chiudere: la cartella si riconosce al volo'
+   ]),
+   to_jsonb(array[
+     'Riconosci la cartella giusta senza leggere il nome',
+     'La scrivania resta ordinata anche quando i file diventano tanti'
+   ]),
+   'Un Mac in esposizione con qualche cartella sulla scrivania',
+   'pronta', 11),
+
+  ('Strumenti di scrittura e l''inglese', 'Apple Intelligence',
+   'Ti capita di scrivere mail in inglese e non essere sicuro di come suonano?',
+   'Studenti, chi lavora con l''estero',
+   'breve', 'media',
+   to_jsonb(array[
+     'Chiedi al cliente di scrivere due righe in inglese in Note o in una mail',
+     'Fagli selezionare il testo e aprire Strumenti di scrittura',
+     'Digli di scegliere Correggi e di toccare una correzione per leggere il perché'
+   ]),
+   to_jsonb(array[
+     'Mandi la mail senza il dubbio di aver scritto una frase sbagliata',
+     'Impari la regola mentre correggi, non solo la parola giusta'
+   ]),
+   'iPhone o iPad con Apple Intelligence attiva',
+   'pronta', 12),
+
+  ('Intelligenza visiva e acquisti', 'Apple Intelligence',
+   'Hai mai visto una poltrona in una foto senza sapere dove comprarla?',
+   'Chi arreda casa, chi salva foto di ispirazione, chi compra online',
+   'lampo', 'facile',
+   to_jsonb(array[
+     'Chiedi al cliente di aprire una foto con un oggetto che gli piace e fare uno screenshot',
+     'Fagli evidenziare l''oggetto con il dito',
+     'Digli di scorrere verso l''alto per vedere dove si compra e quanto costa'
+   ]),
+   to_jsonb(array[
+     'Trovi l''oggetto esatto che hai visto, con il prezzo, senza descriverlo a parole',
+     'Confronti più negozi in una schermata sola'
+   ]),
+   'iPhone con Apple Intelligence attiva e connessione',
+   'pronta', 13);
 end $$;

@@ -186,9 +186,20 @@
     display: grid; place-items: center; margin-top: 1px;
   }
   .dstep i::before { content: counter(st); }
+  .dbens {
+    margin-top: 14px; padding: 12px 13px; border-radius: 13px;
+    background: var(--accent-soft);
+  }
+  .dbens-t {
+    font-size: .68rem; font-weight: 700; text-transform: uppercase; letter-spacing: .05em;
+    color: var(--accent); margin-bottom: 8px;
+  }
+  .dben { display: flex; gap: 9px; font-size: .9rem; line-height: 1.4; align-items: flex-start; }
+  .dben + .dben { margin-top: 6px; }
+  .dben i { font-style: normal; color: var(--accent); font-weight: 700; flex: none; }
   .acts { display: flex; gap: 8px; margin-top: 14px; flex-wrap: wrap; }
   .acts button { min-height: 44px; }
-  .acts .grow { flex: 1; }
+  .acts .grow { flex: 1 1 100%; }   /* il gesto principale sta su una riga sua */
   /* ── Crea la demo ── */
   #demo-form .card h3 { margin-bottom: 8px; }
   .steps-ed { counter-reset: st; display: flex; flex-direction: column; gap: 8px; margin-top: 12px; }
@@ -199,6 +210,8 @@
     font-size: .72rem; font-weight: 700; font-style: normal; display: grid; place-items: center;
   }
   .step-ed i::before { content: counter(st); }
+  .step-ed.ben i { counter-increment: none; background: var(--ok-soft); color: var(--ok); font-size: .8rem; }
+  .step-ed.ben i::before { content: none; }
   .step-ed input { flex: 1; }
   .step-ed .x {
     flex: none; background: none; color: var(--muted); padding: 10px 6px;
@@ -265,6 +278,12 @@
   .login-box h1 { margin-bottom: 4px; }
   .login-box p { color: var(--muted); font-size: .9rem; margin-bottom: 20px; }
   .login-box form { display: flex; flex-direction: column; gap: 12px; text-align: left; }
+  .linkish {
+    background: none; border: none; color: var(--accent); font-family: inherit;
+    font-size: .9rem; font-weight: 600; padding: 14px 8px 4px; cursor: pointer; width: 100%;
+  }
+  .who-list { display: flex; flex-direction: column; gap: 8px; margin-top: 16px; max-height: 45dvh; overflow-y: auto; }
+  .who-list button { background: var(--card); color: var(--text); border: 1px solid var(--line); text-align: left; }
   .hidden { display: none !important; }
 </style>
 </head>
@@ -283,15 +302,7 @@
 </div>
 
 <div id="view-whoami" class="login-wrap hidden">
-  <div class="login-box">
-    <div class="logo">👋</div>
-    <h1>Chi sei?</h1>
-    <p>Il nome finisce accanto alle demo che fai: serve a sapere chi le porta in reparto.</p>
-    <form id="whoami-form">
-      <input type="text" id="whoami-name" placeholder="Il tuo nome" autocomplete="name" required>
-      <button type="submit">Continua</button>
-    </form>
-  </div>
+  <div class="login-box" id="who-box"></div>
 </div>
 
 <div id="view-app" class="hidden">
@@ -322,17 +333,20 @@ const SHARED_EMAIL = "marcocasati+storetasks@gmail.com"; // utente condiviso in 
 const db = createClient(SUPABASE_URL, SUPABASE_KEY);
 
 // ── Stato ───────────────────────────────────────────────────
-const CATS = ["iPhone", "iPad", "Mac", "Watch", "Audio", "Servizi", "Altro"];
+const CATS = ["Apple Intelligence", "Fotocamera e Foto", "Accessibilità", "Tastiera e testo",
+  "Continuity", "Telefono e contatti", "Organizzazione", "Mac", "iPad", "Altro"];
 const DURATIONS = ["lampo", "breve", "completa"];
 const DUR_HINT = { lampo: "30 secondi", breve: "2 minuti", completa: "5 minuti" };
 const LEVELS = ["facile", "media", "avanzata"];
 const OUTCOMES = ["wow", "ok", "fiacca"];
 const OUT_COLOR = { wow: "var(--ok)", ok: "var(--accent)", fiacca: "var(--warn)" };
 
-let demos = [], runs = [], favs = [];
+let demos = [], runs = [], favs = [], persons = [];
 let hasSchema = true;
 let tab = "elenco";
 let me = localStorage.getItem("demo-whoami") || "";
+let meId = localStorage.getItem("demo-person-id") || "";
+let whoState = "pick", whoName = "";   // schermata di registrazione/accesso
 let openIds = new Set();     // schede aperte nell'elenco
 let catFilter = "tutte";
 let query = "";
@@ -368,19 +382,128 @@ $("#login-form").onsubmit = async (e) => {
   await start();
 };
 
-$("#whoami-form").onsubmit = (e) => {
-  e.preventDefault();
-  const v = $("#whoami-name").value.trim();
-  if (v.length < 2) { toast("Scrivi il tuo nome"); return; }
-  me = v; localStorage.setItem("demo-whoami", me);
-  enterApp();
-};
+// ── Registrazione e accesso ────────────────────────────────
+// Il codice di 6 cifre non viene mai salvato: si salva la sua impronta,
+// calcolata qui sul telefono con un sale casuale. Serve a riconoscersi
+// da un altro dispositivo, non a proteggere segreti.
+const newSalt = () => [...crypto.getRandomValues(new Uint8Array(12))]
+  .map(b => b.toString(16).padStart(2, "0")).join("");
+
+async function hashCode(salt, code) {
+  const data = new TextEncoder().encode(salt + ":" + code);
+  const digest = await crypto.subtle.digest("SHA-256", data);
+  return [...new Uint8Array(digest)].map(b => b.toString(16).padStart(2, "0")).join("");
+}
+
+const isCode = (v) => /^[0-9]{6}$/.test(v);
+const personByName = (n) => persons.find(p => p.name.toLowerCase() === (n || "").toLowerCase()) || null;
+
+function showWho(state, name = "") {
+  whoState = state; whoName = name;
+  renderWho();
+  show("whoami");
+}
+
+function renderWho() {
+  const box = $("#who-box");
+
+  if (whoState === "code") {
+    box.innerHTML = `
+      <div class="logo">🔢</div>
+      <h1>Ciao ${esc(whoName)}</h1>
+      <p>Scrivi il codice di 6 cifre che hai scelto quando ti sei registrato.</p>
+      <form id="who-form">
+        <input type="password" id="who-code" inputmode="numeric" pattern="[0-9]*" maxlength="6"
+          placeholder="••••••" autocomplete="off" required>
+        <button type="submit">Entra</button>
+      </form>
+      <button type="button" class="linkish" id="who-back">‹ Non sono io</button>`;
+    $("#who-form").onsubmit = async (e) => {
+      e.preventDefault();
+      const p = personByName(whoName);
+      const code = $("#who-code").value.trim();
+      if (!p) { showWho("pick"); return; }
+      if (await hashCode(p.salt, code) !== p.code_hash) { toast("Codice non valido"); return; }
+      setMe(p);
+      enterApp();
+    };
+    $("#who-back").onclick = () => showWho("pick");
+    return;
+  }
+
+  if (whoState === "register") {
+    box.innerHTML = `
+      <div class="logo">👋</div>
+      <h1>Registrati</h1>
+      <p>Il nome finisce accanto alle demo che fai. Il codice di 6 cifre ti serve
+        per ritrovarti da un altro telefono: scegline uno che ricordi.</p>
+      <form id="who-form">
+        <input type="text" id="reg-name" placeholder="Il tuo nome" autocomplete="name" required>
+        <input type="password" id="reg-code" inputmode="numeric" pattern="[0-9]*" maxlength="6"
+          placeholder="Codice di 6 cifre" autocomplete="off" required>
+        <input type="password" id="reg-code2" inputmode="numeric" pattern="[0-9]*" maxlength="6"
+          placeholder="Ripeti il codice" autocomplete="off" required>
+        <button type="submit" id="reg-btn">Crea il profilo</button>
+      </form>
+      ${persons.length ? `<button type="button" class="linkish" id="who-back">‹ Sono già registrato</button>` : ""}`;
+    $("#who-form").onsubmit = async (e) => {
+      e.preventDefault();
+      const name = $("#reg-name").value.trim();
+      const code = $("#reg-code").value.trim(), code2 = $("#reg-code2").value.trim();
+      if (name.length < 2) { toast("Scrivi il tuo nome"); return; }
+      if (personByName(name)) { toast("Questo nome è già registrato"); return; }
+      if (!isCode(code)) { toast("Il codice è di 6 cifre"); return; }
+      if (code !== code2) { toast("I due codici non coincidono"); return; }
+      const btn = $("#reg-btn"); btn.disabled = true;
+      const salt = newSalt();
+      const { data, error } = await db.from("demo_people")
+        .insert({ name, salt, code_hash: await hashCode(salt, code) }).select().single();
+      btn.disabled = false;
+      if (error) { toast("Nome già preso o errore di rete"); return; }
+      setMe(data);
+      await loadAll();
+      enterApp();
+    };
+    const back = $("#who-back");
+    if (back) back.onclick = () => showWho("pick");
+    return;
+  }
+
+  // pick
+  box.innerHTML = `
+    <div class="logo">👋</div>
+    <h1>Chi sei?</h1>
+    <p>${persons.length ? "Scegli il tuo nome, poi il codice." : "Nessuno si è ancora registrato: comincia tu."}</p>
+    ${persons.length ? `<div class="who-list">${persons.map(p =>
+      `<button type="button" data-who="${esc(p.name)}">${esc(p.name)}</button>`).join("")}</div>` : ""}
+    <button type="button" class="ghost" id="who-new" style="margin-top:16px;width:100%">Sono nuovo, registrami</button>`;
+  box.querySelectorAll("[data-who]").forEach(b => {
+    b.onclick = () => showWho("code", b.dataset.who);
+  });
+  $("#who-new").onclick = () => showWho("register");
+}
+
+function setMe(person) {
+  me = person.name; meId = person.id;
+  localStorage.setItem("demo-whoami", me);
+  localStorage.setItem("demo-person-id", meId);
+}
+
+function forgetMe() {
+  me = ""; meId = "";
+  localStorage.removeItem("demo-whoami");
+  localStorage.removeItem("demo-person-id");
+}
 
 $("#whoami-chip").onclick = () => { tab = "profilo"; enterApp(); };
 
 async function start() {
   await loadAll();
-  if (!me) { show("whoami"); return; }
+  if (!hasSchema) { show("app"); render(); return; }
+  // il profilo salvato vale finché esiste ancora nel database
+  const mine = persons.find(p => p.id === meId) || personByName(me);
+  if (!mine) { forgetMe(); showWho(persons.length ? "pick" : "register"); return; }
+  setMe(mine);
   enterApp();
 }
 
@@ -393,15 +516,17 @@ function enterApp() {
 
 // ── Dati ────────────────────────────────────────────────────
 async function loadAll() {
-  const [d, r, f] = await Promise.all([
+  const [d, r, f, p] = await Promise.all([
     db.from("demos").select("*").order("position"),
     db.from("demo_runs").select("*").order("created_at"),
     db.from("demo_favorites").select("*"),
+    db.from("demo_people").select("*").order("name"),
   ]);
-  hasSchema = !d.error && !f.error;
+  hasSchema = !d.error && !f.error && !p.error;
   demos = d.data || [];
   runs = r.data || [];
   favs = f.data || [];
+  persons = p.data || [];
 }
 
 let rtChannel = null, reloadTimer = null;
@@ -425,6 +550,7 @@ const lastRun = (id) => { const a = runsOf(id); return a.length ? a[a.length - 1
 const recentRuns = (id, days = 30) => runsOf(id).filter(r => r.created_at >= daysAgo(days)).length;
 const demoOf = (id) => demos.find(d => d.id === id) || null;
 const stepsOf = (d) => Array.isArray(d?.steps) ? d.steps : [];
+const benefitsOf = (d) => Array.isArray(d?.benefits) ? d.benefits : [];
 const inCatalog = () => demos.filter(d => d.status !== "ritirata");
 const isFav = (id) => favs.some(f => f.demo_id === id && f.person_name === me);
 const myFavs = () => favs.filter(f => f.person_name === me);
@@ -500,6 +626,7 @@ function demoCard(d) {
   const n = runsOf(d.id).length;
   const last = lastRun(d.id);
   const steps = stepsOf(d);
+  const bens = benefitsOf(d);
   const fav = isFav(d.id);
   const summary = [
     d.who || null,
@@ -529,8 +656,11 @@ function demoCard(d) {
     ${!open ? "" : `
     ${d.hook ? `<div class="hook">“${esc(d.hook)}”</div>` : ""}
     ${steps.length ? `<div class="dsteps">${steps.map(s => `<div class="dstep"><i></i><span>${esc(s)}</span></div>`).join("")}</div>`
-      : `<div class="dline">Nessun passo scritto: aprila in modifica e racconta come si fa.</div>`}
-    ${d.wow ? `<div class="dline">✨ <b>Il momento:</b> ${esc(d.wow)}</div>` : ""}
+      : `<div class="dline">Nessun passo scritto: aprila in modifica e racconta cosa dire al cliente.</div>`}
+    ${bens.length ? `<div class="dbens">
+      <div class="dbens-t">Cosa ci guadagna il cliente</div>
+      ${bens.map(b => `<div class="dben"><i>✓</i><span>${esc(b)}</span></div>`).join("")}
+    </div>` : ""}
     ${d.needs ? `<div class="dline">🧰 <b>Serve:</b> ${esc(d.needs)}</div>` : ""}
     ${d.owner ? `<div class="dline">👤 <b>La cura:</b> ${esc(d.owner)}</div>` : ""}
     <div class="acts">
@@ -590,7 +720,8 @@ async function toggleFav(id) {
 function renderElenco(main) {
   const list = inCatalog()
     .filter(d => catFilter === "tutte" || d.category === catFilter)
-    .filter(d => !query || (d.name + " " + (d.hook || "") + " " + (d.who || "") + " " + stepsOf(d).join(" "))
+    .filter(d => !query || (d.name + " " + (d.hook || "") + " " + (d.who || "") + " "
+      + stepsOf(d).join(" ") + " " + benefitsOf(d).join(" "))
       .toLowerCase().includes(query.toLowerCase()));
   const used = CATS.filter(c => inCatalog().some(d => d.category === c));
   const sorted = catalogSorted(list);
@@ -653,8 +784,16 @@ function renderPreferite(main) {
 function stepRow(value = "") {
   return `<div class="step-ed">
     <i></i>
-    <input type="text" name="step" value="${esc(value)}" placeholder="Cosa fai, in una riga">
-    <button type="button" class="x" data-del-step title="Togli il passo">✕</button>
+    <input type="text" name="step" value="${esc(value)}" placeholder="Chiedi al cliente di…">
+    <button type="button" class="x" data-del title="Togli il passo">✕</button>
+  </div>`;
+}
+
+function benefitRow(value = "") {
+  return `<div class="step-ed ben">
+    <i>✓</i>
+    <input type="text" name="benefit" value="${esc(value)}" placeholder="Così il cliente…">
+    <button type="button" class="x" data-del title="Togli il vantaggio">✕</button>
   </div>`;
 }
 
@@ -669,7 +808,7 @@ function renderCrea(main) {
 
   const opt = (name, values, cur) => values.map(v =>
     `<option value="${v}" ${cur === v ? "selected" : ""}>${v}${name === "duration" ? ` · ${DUR_HINT[v]}` : ""}</option>`).join("");
-  const steps = stepsOf(d);
+  const steps = stepsOf(d), bens = benefitsOf(d);
 
   main.innerHTML = `
     <form id="demo-form">
@@ -697,8 +836,9 @@ function renderCrea(main) {
       </div>
 
       <div class="card">
-        <h3>I passi</h3>
-        <div class="sub">Uno per riga, nell'ordine in cui li fai davvero.</div>
+        <h3>I passaggi da dire al cliente</h3>
+        <div class="sub">Pochi e chiari, nell'ordine in cui si fanno. Scrivili come li diresti:
+          “Chiedi al cliente di aprire la fotocamera dell'iPhone che ha in mano”.</div>
         <div class="steps-ed" id="steps-ed">
           ${(steps.length ? steps : ["", "", ""]).map(s => stepRow(s)).join("")}
         </div>
@@ -706,10 +846,16 @@ function renderCrea(main) {
       </div>
 
       <div class="card">
+        <h3>Cosa ci guadagna il cliente</h3>
+        <div class="sub">Come si chiude la demo: un paio di vantaggi concreti, nella sua vita di tutti i giorni.</div>
+        <div class="steps-ed" id="bens-ed">
+          ${(bens.length ? bens : ["", ""]).map(b => benefitRow(b)).join("")}
+        </div>
+        <button type="button" class="ghost small" id="add-ben" style="margin-top:10px">+ Aggiungi vantaggio</button>
+      </div>
+
+      <div class="card">
         <h3>Il contorno</h3>
-        <div class="field"><label>Il momento che fa effetto</label>
-          <input type="text" name="wow" value="${esc(d?.wow || "")}"
-            placeholder="es. il prima/dopo tenendo premuto sulla foto"></div>
         <div class="field"><label>Cosa serve prima di iniziare</label>
           <input type="text" name="needs" value="${esc(d?.needs || "")}"
             placeholder="es. un iPhone demo con qualche foto"></div>
@@ -731,22 +877,26 @@ function renderCrea(main) {
     </form>`;
 
   const form = $("#demo-form");
-  const ed = $("#steps-ed");
-  const wireSteps = () => {
-    ed.querySelectorAll("[data-del-step]").forEach(b => {
+  // passi e vantaggi si comportano allo stesso modo: una riga si aggiunge,
+  // una riga si toglie, l'ultima rimasta si svuota invece di sparire
+  const wireList = (box) => {
+    box.querySelectorAll("[data-del]").forEach(b => {
       b.onclick = () => {
-        if (ed.querySelectorAll(".step-ed").length <= 1) { b.closest(".step-ed").querySelector("input").value = ""; return; }
+        const rows = box.querySelectorAll(".step-ed");
+        if (rows.length <= 1) { b.closest(".step-ed").querySelector("input").value = ""; return; }
         b.closest(".step-ed").remove();
       };
     });
   };
-  wireSteps();
-  $("#add-step").onclick = () => {
-    ed.insertAdjacentHTML("beforeend", stepRow());
-    wireSteps();
-    const last = ed.querySelector(".step-ed:last-child input");
-    last.focus();
+  const addTo = (box, html) => {
+    box.insertAdjacentHTML("beforeend", html);
+    wireList(box);
+    box.querySelector(".step-ed:last-child input").focus();
   };
+  const stepsEd = $("#steps-ed"), bensEd = $("#bens-ed");
+  wireList(stepsEd); wireList(bensEd);
+  $("#add-step").onclick = () => addTo(stepsEd, stepRow());
+  $("#add-ben").onclick = () => addTo(bensEd, benefitRow());
   $("#cancel-demo").onclick = () => goTab("elenco");
   if (d) $("#del-demo").onclick = async () => {
     if (!confirm(`Eliminare “${d.name}”? Sparisce anche il registro di quando è stata fatta.`)) return;
@@ -768,7 +918,7 @@ function renderCrea(main) {
       duration: fd.get("duration"),
       level: fd.get("level"),
       steps: fd.getAll("step").map(s => s.trim()).filter(Boolean),
-      wow: (fd.get("wow") || "").trim() || null,
+      benefits: fd.getAll("benefit").map(s => s.trim()).filter(Boolean),
       needs: (fd.get("needs") || "").trim() || null,
       owner: (fd.get("owner") || "").trim() || null,
       status: fd.get("status"),
@@ -863,7 +1013,11 @@ function renderProfilo(main) {
     <div class="card">
       <div class="row spread">
         <div><h3>${esc(me)}</h3><div class="sub">Il nome che finisce accanto alle demo che fai</div></div>
-        <button class="ghost small" id="edit-name">Cambia</button>
+        <button class="ghost small" id="edit-name">Cambia nome</button>
+      </div>
+      <div class="row" style="margin-top:12px">
+        <button class="ghost small" id="edit-code">Cambia il codice</button>
+        <span class="sub">6 cifre, per ritrovarti da un altro telefono</span>
       </div>
     </div>
 
@@ -915,10 +1069,43 @@ function renderProfilo(main) {
       async (fd) => {
         const v = (fd.get("name") || "").trim();
         if (v.length < 2) { toast("Scrivi il tuo nome"); return false; }
-        const old = me;
+        if (v === me) return;
+        if (personByName(v)) { toast("Questo nome è già registrato"); return false; }
+        const previous = me;
+        const { error } = await db.from("demo_people").update({ name: v }).eq("id", meId);
+        if (error) { toast("Errore nel salvataggio"); return false; }
         me = v; localStorage.setItem("demo-whoami", me);
         // le preferite seguono la persona, non il nome vecchio
-        if (old && old !== me) await db.from("demo_favorites").update({ person_name: me }).eq("person_name", old);
+        await db.from("demo_favorites").update({ person_name: me }).eq("person_name", previous);
+        await refresh();
+      });
+  };
+
+  $("#edit-code").onclick = () => {
+    openDialog("Cambia il codice", `
+      <div class="field"><label>Codice attuale</label>
+        <input type="password" name="old" inputmode="numeric" pattern="[0-9]*" maxlength="6"
+          placeholder="••••••" autocomplete="off" required></div>
+      <div class="field"><label>Nuovo codice</label>
+        <input type="password" name="new" inputmode="numeric" pattern="[0-9]*" maxlength="6"
+          placeholder="6 cifre" autocomplete="off" required></div>
+      <div class="field"><label>Ripeti il nuovo codice</label>
+        <input type="password" name="new2" inputmode="numeric" pattern="[0-9]*" maxlength="6"
+          placeholder="6 cifre" autocomplete="off" required></div>`,
+      async (fd) => {
+        const p = persons.find(x => x.id === meId);
+        if (!p) { toast("Profilo non trovato"); return false; }
+        if (await hashCode(p.salt, (fd.get("old") || "").trim()) !== p.code_hash) {
+          toast("Codice attuale sbagliato"); return false;
+        }
+        const nuovo = (fd.get("new") || "").trim();
+        if (!isCode(nuovo)) { toast("Il codice è di 6 cifre"); return false; }
+        if (nuovo !== (fd.get("new2") || "").trim()) { toast("I due codici non coincidono"); return false; }
+        const salt = newSalt();
+        const { error } = await db.from("demo_people")
+          .update({ salt, code_hash: await hashCode(salt, nuovo) }).eq("id", meId);
+        if (error) { toast("Errore nel salvataggio"); return false; }
+        toast("Codice aggiornato");
         await refresh();
       });
   };
@@ -926,6 +1113,8 @@ function renderProfilo(main) {
     b.onclick = () => { catFilter = "tutte"; query = ""; openIds.add(b.dataset.go); goTab("elenco"); };
   });
   $("#logout").onclick = async () => {
+    if (!confirm("Esci da questo telefono? Per rientrare servono la password del team e il tuo codice.")) return;
+    forgetMe();
     await db.auth.signOut();
     rtChannel = null;
     show("login");
