@@ -1,0 +1,1157 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#0f1220">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icon.svg">
+<title>Demo Interattive</title>
+<style>
+  :root {
+    --bg: #f2f3f8;
+    --card: #ffffff;
+    --glass: rgba(255, 255, 255, .58);
+    --glass-line: rgba(255, 255, 255, .75);
+    --text: #14172b;
+    --muted: #6b7085;
+    --line: #e3e5ee;
+    --accent: #7c3aed;
+    --accent-soft: #efe7ff;
+    --ok: #1fa36b;
+    --ok-soft: #e2f6ec;
+    --warn: #c77b12;
+    --warn-soft: #fcefdc;
+    --danger: #d33f49;
+    --radius: 16px;
+    --shadow: 0 10px 30px rgba(20, 23, 43, .10);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #0f1220;
+      --card: #191d31;
+      --glass: rgba(25, 29, 49, .55);
+      --glass-line: rgba(255, 255, 255, .10);
+      --text: #eceef7;
+      --muted: #9aa0b8;
+      --line: #2a2f4a;
+      --accent: #b18aff;
+      --accent-soft: #2b2350;
+      --ok: #3ecf8e;
+      --ok-soft: #163a2c;
+      --warn: #e8a13c;
+      --warn-soft: #3d2f14;
+      --danger: #ff6b74;
+      --shadow: 0 10px 30px rgba(0, 0, 0, .35);
+    }
+  }
+  * { box-sizing: border-box; margin: 0; }
+  html { -webkit-text-size-adjust: 100%; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background: var(--bg); color: var(--text);
+    min-height: 100dvh;
+    padding-bottom: calc(96px + env(safe-area-inset-bottom));
+  }
+  header {
+    position: sticky; top: 0; z-index: 10;
+    background: var(--glass);
+    -webkit-backdrop-filter: blur(22px) saturate(1.8);
+    backdrop-filter: blur(22px) saturate(1.8);
+    padding: calc(12px + env(safe-area-inset-top)) 16px 10px;
+    display: flex; align-items: center; justify-content: space-between;
+    border-bottom: 1px solid var(--glass-line);
+  }
+  header h1 { font-size: 1.15rem; letter-spacing: -.01em; }
+  #whoami-chip {
+    font-size: .85rem; color: var(--accent); background: var(--accent-soft);
+    border: none; border-radius: 999px; padding: 6px 12px; font-weight: 600;
+  }
+  main { padding: 14px 14px 20px; max-width: 640px; margin: 0 auto; }
+  .card {
+    background: var(--card); border: 1px solid var(--line);
+    border-radius: var(--radius); padding: 14px; margin-bottom: 12px;
+    box-shadow: 0 2px 10px rgba(20, 23, 43, .04);
+  }
+  .card h3 { font-size: 1.02rem; margin-bottom: 2px; letter-spacing: -.01em; }
+  .sub { color: var(--muted); font-size: .82rem; }
+  .row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+  .spread { justify-content: space-between; }
+  .field { margin-top: 10px; }
+  .field label { display: block; font-size: .78rem; color: var(--muted); margin-bottom: 4px; }
+  select, textarea,
+  input[type=text], input[type=date], input[type=password], input[type=search] {
+    width: 100%; padding: 11px 12px; font-size: 1rem;
+    border: 1px solid var(--line); border-radius: 12px;
+    background: var(--bg); color: var(--text);
+    -webkit-appearance: none; appearance: none;
+    font-family: inherit;
+  }
+  textarea { resize: vertical; line-height: 1.4; }
+  button {
+    font-family: inherit; font-size: .95rem; font-weight: 600;
+    border: none; border-radius: 12px; padding: 11px 16px;
+    background: var(--accent); color: #fff; cursor: pointer;
+  }
+  button.ghost { background: var(--accent-soft); color: var(--accent); }
+  button.small { padding: 7px 12px; font-size: .85rem; }
+  button.danger { background: transparent; color: var(--danger); padding: 7px 8px; }
+  button:disabled { opacity: .5; }
+  .badge {
+    font-size: .75rem; font-weight: 700; padding: 3px 9px; border-radius: 999px;
+    background: var(--warn-soft); color: var(--warn); white-space: nowrap;
+  }
+  .badge.done { background: var(--ok-soft); color: var(--ok); }
+  .badge.soft { background: var(--accent-soft); color: var(--accent); }
+  .badge.off { background: var(--line); color: var(--muted); }
+  .section-head { display: flex; justify-content: space-between; align-items: center; margin: 6px 2px 12px; }
+  .section-head h2 { font-size: 1.05rem; letter-spacing: -.01em; }
+  .cat-head {
+    margin: 18px 4px 8px; font-size: .82rem; font-weight: 700;
+    color: var(--muted); text-transform: uppercase; letter-spacing: .05em;
+  }
+  .empty { text-align: center; color: var(--muted); padding: 30px 10px; font-size: .9rem; }
+  .empty-big { text-align: center; color: var(--muted); padding: 90px 24px 30px; }
+  .empty-big .glyph { font-size: 2.6rem; margin-bottom: 12px; }
+  .empty-big h2 { color: var(--text); font-size: 1.1rem; margin-bottom: 6px; }
+  nav {
+    position: fixed; z-index: 10;
+    left: max(12px, env(safe-area-inset-left));
+    right: max(12px, env(safe-area-inset-right));
+    bottom: calc(12px + env(safe-area-inset-bottom));
+    display: flex;
+    background: var(--glass);
+    -webkit-backdrop-filter: blur(24px) saturate(1.8);
+    backdrop-filter: blur(24px) saturate(1.8);
+    border: 1px solid var(--glass-line);
+    border-radius: 32px;
+    box-shadow: var(--shadow);
+    padding: 6px;
+    max-width: 420px; margin: 0 auto;
+  }
+  nav button {
+    flex: 1; background: none; color: var(--muted); border-radius: 24px;
+    padding: 7px 0 6px; font-size: .68rem; font-weight: 600;
+    display: flex; flex-direction: column; align-items: center; gap: 2px;
+  }
+  nav button .ico {
+    display: flex; align-items: center; justify-content: center;
+    width: 46px; height: 28px; border-radius: 999px; transition: background .2s;
+  }
+  nav button .ico svg { width: 21px; height: 21px; }
+  nav button.active { color: var(--accent); }
+  nav button.active .ico { background: var(--accent-soft); }
+  /* ── Catalogo ── */
+  .chips { display: flex; flex-wrap: wrap; gap: 6px; }
+  .filters { margin-bottom: 12px; overflow-x: auto; flex-wrap: nowrap; padding-bottom: 2px; }
+  .fchip {
+    border: 1px solid var(--line); background: var(--card); color: var(--muted);
+    border-radius: 999px; padding: 7px 14px; font-size: .82rem; font-weight: 600;
+    cursor: pointer; font-family: inherit; white-space: nowrap;
+  }
+  .fchip[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .d-summary { cursor: pointer; align-items: flex-start; gap: 10px; }
+  .d-title { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .star {
+    background: none; border: none; padding: 2px 6px; margin: -2px -4px;
+    font-size: 1.15rem; line-height: 1; cursor: pointer; color: var(--muted);
+  }
+  .star.on { color: #f0a500; }
+  .dmeta { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+  .dmeta span {
+    font-size: .7rem; font-weight: 700; padding: 3px 9px; border-radius: 999px;
+    text-transform: uppercase; letter-spacing: .04em;
+    background: var(--bg); color: var(--muted);
+  }
+  .dmeta span.dur { background: var(--accent-soft); color: var(--accent); }
+  .dmeta span.lev-avanzata { background: rgba(211, 63, 73, .14); color: var(--danger); }
+  .dmeta span.lev-media { background: var(--warn-soft); color: var(--warn); }
+  .dmeta span.fav { background: rgba(240, 165, 0, .16); color: #a06f00; }
+  .edit-chip {
+    margin-left: auto; background: none; border: 1px solid var(--line); color: var(--muted);
+    border-radius: 999px; padding: 4px 11px; font-size: .72rem; font-weight: 700;
+    text-transform: uppercase; letter-spacing: .04em; cursor: pointer;
+  }
+  .edit-chip:hover { border-color: var(--accent); color: var(--accent); }
+  @media (prefers-color-scheme: dark) { .dmeta span.fav { color: #f0a500; } }
+  .hook {
+    margin-top: 12px; font-size: .95rem; line-height: 1.45; font-style: italic;
+    border-left: 3px solid var(--accent); padding-left: 10px;
+  }
+  .dline { margin-top: 10px; font-size: .85rem; color: var(--muted); }
+  .dline b { color: var(--text); font-weight: 600; }
+  .dsteps { counter-reset: st; margin-top: 12px; display: flex; flex-direction: column; gap: 8px; }
+  .dstep { display: flex; gap: 10px; font-size: .92rem; line-height: 1.4; align-items: flex-start; }
+  .dstep i {
+    counter-increment: st; flex: none; width: 21px; height: 21px; border-radius: 999px;
+    background: var(--accent-soft); color: var(--accent);
+    font-size: .72rem; font-weight: 700; font-style: normal;
+    display: grid; place-items: center; margin-top: 1px;
+  }
+  .dstep i::before { content: counter(st); }
+  .dbens {
+    margin-top: 14px; padding: 12px 13px; border-radius: 13px;
+    background: var(--accent-soft);
+  }
+  .dbens-t {
+    font-size: .68rem; font-weight: 700; text-transform: uppercase; letter-spacing: .05em;
+    color: var(--accent); margin-bottom: 8px;
+  }
+  .dben { display: flex; gap: 9px; font-size: .9rem; line-height: 1.4; align-items: flex-start; }
+  .dben + .dben { margin-top: 6px; }
+  .dben i { font-style: normal; color: var(--accent); font-weight: 700; flex: none; }
+  .acts { display: flex; gap: 8px; margin-top: 14px; flex-wrap: wrap; }
+  .acts button { min-height: 44px; }
+  .acts .grow { flex: 1 1 100%; }   /* il gesto principale sta su una riga sua */
+  /* ── Crea la demo ── */
+  #demo-form .card h3 { margin-bottom: 8px; }
+  .steps-ed { counter-reset: st; display: flex; flex-direction: column; gap: 8px; margin-top: 12px; }
+  .step-ed { display: flex; align-items: center; gap: 9px; }
+  .step-ed i {
+    counter-increment: st; flex: none; width: 21px; height: 21px; border-radius: 999px;
+    background: var(--accent-soft); color: var(--accent);
+    font-size: .72rem; font-weight: 700; font-style: normal; display: grid; place-items: center;
+  }
+  .step-ed i::before { content: counter(st); }
+  .step-ed.ben i { counter-increment: none; background: var(--ok-soft); color: var(--ok); font-size: .8rem; }
+  .step-ed.ben i::before { content: none; }
+  .step-ed input { flex: 1; }
+  .step-ed .x {
+    flex: none; background: none; color: var(--muted); padding: 10px 6px;
+    font-size: .95rem; min-width: 34px;
+  }
+  /* ── Profilo ── */
+  .stats { display: flex; gap: 8px; margin-bottom: 14px; }
+  .stat {
+    flex: 1; background: var(--card); border: 1px solid var(--line);
+    border-radius: 14px; padding: 10px 6px; text-align: center;
+  }
+  .stat b { display: block; font-size: 1.3rem; letter-spacing: -.02em; font-variant-numeric: tabular-nums; }
+  .stat span { font-size: .66rem; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; }
+  .rank {
+    display: flex; align-items: center; gap: 12px; padding: 11px 14px;
+    background: var(--card); border: 1px solid var(--line);
+    border-radius: 14px; margin-bottom: 8px;
+  }
+  .rank-name { flex: 0 0 40%; font-size: .9rem; font-weight: 600; }
+  .rank-name em { display: block; font-style: normal; font-size: .72rem; color: var(--muted); font-weight: 400; }
+  .bar { flex: 1; height: 8px; border-radius: 99px; background: var(--line); overflow: hidden; display: flex; }
+  .bar i { display: block; height: 100%; }
+  .bar i.w { background: var(--ok); }
+  .bar i.o { background: var(--accent); }
+  .bar i.f { background: var(--warn); }
+  .rank-num { font-size: .78rem; color: var(--muted); font-variant-numeric: tabular-nums; flex: none; min-width: 40px; text-align: right; }
+  .feed { display: flex; flex-direction: column; }
+  .fitem { display: flex; gap: 12px; padding-bottom: 15px; position: relative; }
+  .fitem:not(:last-child)::before {
+    content: ""; position: absolute; left: 5px; top: 17px; bottom: 0; width: 2px; background: var(--line);
+  }
+  .fdot { width: 12px; height: 12px; border-radius: 99px; flex: none; margin-top: 4px; z-index: 2; }
+  .ftxt { flex: 1; min-width: 0; }
+  .fwk { font-size: .72rem; color: var(--muted); display: block; }
+  .fbody { font-size: .92rem; line-height: 1.5; }
+  .fbody b { font-weight: 600; }
+  .day-head {
+    margin: 16px 4px 8px; font-size: .78rem; font-weight: 700;
+    color: var(--muted); text-transform: uppercase; letter-spacing: .05em;
+  }
+  /* ── Dialog, toast, login ── */
+  dialog {
+    border: none; border-radius: 20px; background: var(--card); color: var(--text);
+    width: min(92vw, 420px); padding: 18px;
+    max-height: 86dvh; overflow-y: auto; box-shadow: var(--shadow);
+  }
+  dialog::backdrop {
+    background: rgba(10, 12, 25, .35);
+    -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px);
+  }
+  dialog h3 { margin-bottom: 4px; }
+  .dialog-actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 16px; }
+  #toast {
+    position: fixed; left: 50%; transform: translateX(-50%);
+    bottom: calc(96px + env(safe-area-inset-bottom));
+    background: var(--text); color: var(--bg); padding: 10px 18px;
+    border-radius: 999px; font-size: .85rem; opacity: 0; transition: opacity .25s;
+    pointer-events: none; z-index: 50; max-width: 88vw; text-align: center;
+  }
+  #toast.show { opacity: 1; }
+  .login-wrap { min-height: 100dvh; display: flex; align-items: center; justify-content: center; padding: 24px; }
+  .login-box { width: min(92vw, 380px); text-align: center; }
+  .login-box .logo { font-size: 3rem; margin-bottom: 8px; }
+  .login-box h1 { margin-bottom: 4px; }
+  .login-box p { color: var(--muted); font-size: .9rem; margin-bottom: 20px; }
+  .login-box form { display: flex; flex-direction: column; gap: 12px; text-align: left; }
+  .linkish {
+    background: none; border: none; color: var(--accent); font-family: inherit;
+    font-size: .9rem; font-weight: 600; padding: 14px 8px 4px; cursor: pointer; width: 100%;
+  }
+  .who-list { display: flex; flex-direction: column; gap: 8px; margin-top: 16px; max-height: 45dvh; overflow-y: auto; }
+  .who-list button { background: var(--card); color: var(--text); border: 1px solid var(--line); text-align: left; }
+  .hidden { display: none !important; }
+</style>
+</head>
+<body>
+
+<div id="view-login" class="login-wrap hidden">
+  <div class="login-box">
+    <div class="logo">✨</div>
+    <h1>Demo Interattive</h1>
+    <p>Inserisci la password del team per entrare.</p>
+    <form id="login-form">
+      <input type="password" id="login-password" placeholder="Password del team" autocomplete="current-password" required>
+      <button type="submit" id="login-btn">Entra</button>
+    </form>
+  </div>
+</div>
+
+<div id="view-whoami" class="login-wrap hidden">
+  <div class="login-box" id="who-box"></div>
+</div>
+
+<div id="view-app" class="hidden">
+  <header>
+    <h1 id="tab-title">Catalogo</h1>
+    <button id="whoami-chip" title="Cambia nome"></button>
+  </header>
+  <main id="main"></main>
+  <nav id="nav"></nav>
+</div>
+
+<div id="toast"></div>
+
+<dialog id="dlg">
+  <form method="dialog" id="dlg-form"></form>
+</dialog>
+
+<script type="module">
+import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm";
+
+// ── Configurazione ──────────────────────────────────────────
+// Stesso progetto Supabase di Store Tasks, tabelle sue: il sito è
+// separato, il login è lo stesso che il team già conosce.
+const SUPABASE_URL = "https://nrxnmucuwucfecnphrtf.supabase.co";
+const SUPABASE_KEY = "sb_publishable_OJnekj88Hcc4zCXVo8k9Uw_oSlwAmXm";
+const SHARED_EMAIL = "marcocasati+storetasks@gmail.com"; // utente condiviso in Supabase Auth
+
+const db = createClient(SUPABASE_URL, SUPABASE_KEY);
+
+// ── Stato ───────────────────────────────────────────────────
+const CATS = ["Apple Intelligence", "Fotocamera e Foto", "Accessibilità", "Tastiera e testo",
+  "Continuity", "Telefono e contatti", "Organizzazione", "Mac", "iPad", "Altro"];
+const DURATIONS = ["lampo", "breve", "completa"];
+const DUR_HINT = { lampo: "30 secondi", breve: "2 minuti", completa: "5 minuti" };
+const LEVELS = ["facile", "media", "avanzata"];
+const OUTCOMES = ["wow", "ok", "fiacca"];
+const OUT_COLOR = { wow: "var(--ok)", ok: "var(--accent)", fiacca: "var(--warn)" };
+
+let demos = [], runs = [], favs = [], persons = [];
+let hasSchema = true;
+let tab = "elenco";
+let me = localStorage.getItem("demo-whoami") || "";
+let meId = localStorage.getItem("demo-person-id") || "";
+let whoState = "pick", whoName = "";   // schermata di registrazione/accesso
+let openIds = new Set();     // schede aperte nell'elenco
+let catFilter = "tutte";
+let query = "";
+let editingId = null;        // la demo aperta nella scheda "Crea"
+let formMounted = null;      // evita che un aggiornamento altrui cancelli quello che stai scrivendo
+
+const $ = (s) => document.querySelector(s);
+const views = { login: $("#view-login"), whoami: $("#view-whoami"), app: $("#view-app") };
+function show(name) {
+  Object.entries(views).forEach(([k, el]) => el.classList.toggle("hidden", k !== name));
+}
+function toast(msg) {
+  const t = $("#toast");
+  t.textContent = msg; t.classList.add("show");
+  clearTimeout(t._h); t._h = setTimeout(() => t.classList.remove("show"), 2600);
+}
+const esc = (s) => (s ?? "").toString().replace(/[&<>"']/g, c => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[c]));
+const fmtTs = (ts) => new Date(ts).toLocaleString("it-IT", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
+const fmtDay = (ts) => new Date(ts).toLocaleDateString("it-IT", { weekday: "long", day: "numeric", month: "long" });
+const DAY_MS = 86400000;
+const daysAgo = (n) => new Date(Date.now() - n * DAY_MS).toISOString();
+
+// ── Login ───────────────────────────────────────────────────
+$("#login-form").onsubmit = async (e) => {
+  e.preventDefault();
+  const btn = $("#login-btn");
+  btn.disabled = true; btn.textContent = "Entro…";
+  const { error } = await db.auth.signInWithPassword({
+    email: SHARED_EMAIL, password: $("#login-password").value,
+  });
+  btn.disabled = false; btn.textContent = "Entra";
+  if (error) { toast("Password non valida"); return; }
+  await start();
+};
+
+// ── Registrazione e accesso ────────────────────────────────
+// Il codice di 6 cifre non viene mai salvato: si salva la sua impronta,
+// calcolata qui sul telefono con un sale casuale. Serve a riconoscersi
+// da un altro dispositivo, non a proteggere segreti.
+const newSalt = () => [...crypto.getRandomValues(new Uint8Array(12))]
+  .map(b => b.toString(16).padStart(2, "0")).join("");
+
+async function hashCode(salt, code) {
+  const data = new TextEncoder().encode(salt + ":" + code);
+  const digest = await crypto.subtle.digest("SHA-256", data);
+  return [...new Uint8Array(digest)].map(b => b.toString(16).padStart(2, "0")).join("");
+}
+
+const isCode = (v) => /^[0-9]{6}$/.test(v);
+const personByName = (n) => persons.find(p => p.name.toLowerCase() === (n || "").toLowerCase()) || null;
+
+function showWho(state, name = "") {
+  whoState = state; whoName = name;
+  renderWho();
+  show("whoami");
+}
+
+function renderWho() {
+  const box = $("#who-box");
+
+  if (whoState === "code") {
+    box.innerHTML = `
+      <div class="logo">🔢</div>
+      <h1>Ciao ${esc(whoName)}</h1>
+      <p>Scrivi il codice di 6 cifre che hai scelto quando ti sei registrato.</p>
+      <form id="who-form">
+        <input type="password" id="who-code" inputmode="numeric" pattern="[0-9]*" maxlength="6"
+          placeholder="••••••" autocomplete="off" required>
+        <button type="submit">Entra</button>
+      </form>
+      <button type="button" class="linkish" id="who-back">‹ Non sono io</button>`;
+    $("#who-form").onsubmit = async (e) => {
+      e.preventDefault();
+      const p = personByName(whoName);
+      const code = $("#who-code").value.trim();
+      if (!p) { showWho("pick"); return; }
+      if (await hashCode(p.salt, code) !== p.code_hash) { toast("Codice non valido"); return; }
+      setMe(p);
+      enterApp();
+    };
+    $("#who-back").onclick = () => showWho("pick");
+    return;
+  }
+
+  if (whoState === "register") {
+    box.innerHTML = `
+      <div class="logo">👋</div>
+      <h1>Registrati</h1>
+      <p>Il nome finisce accanto alle demo che fai. Il codice di 6 cifre ti serve
+        per ritrovarti da un altro telefono: scegline uno che ricordi.</p>
+      <form id="who-form">
+        <input type="text" id="reg-name" placeholder="Il tuo nome" autocomplete="name" required>
+        <input type="password" id="reg-code" inputmode="numeric" pattern="[0-9]*" maxlength="6"
+          placeholder="Codice di 6 cifre" autocomplete="off" required>
+        <input type="password" id="reg-code2" inputmode="numeric" pattern="[0-9]*" maxlength="6"
+          placeholder="Ripeti il codice" autocomplete="off" required>
+        <button type="submit" id="reg-btn">Crea il profilo</button>
+      </form>
+      ${persons.length ? `<button type="button" class="linkish" id="who-back">‹ Sono già registrato</button>` : ""}`;
+    $("#who-form").onsubmit = async (e) => {
+      e.preventDefault();
+      const name = $("#reg-name").value.trim();
+      const code = $("#reg-code").value.trim(), code2 = $("#reg-code2").value.trim();
+      if (name.length < 2) { toast("Scrivi il tuo nome"); return; }
+      if (personByName(name)) { toast("Questo nome è già registrato"); return; }
+      if (!isCode(code)) { toast("Il codice è di 6 cifre"); return; }
+      if (code !== code2) { toast("I due codici non coincidono"); return; }
+      const btn = $("#reg-btn"); btn.disabled = true;
+      const salt = newSalt();
+      const { data, error } = await db.from("demo_people")
+        .insert({ name, salt, code_hash: await hashCode(salt, code) }).select().single();
+      btn.disabled = false;
+      if (error) { toast("Nome già preso o errore di rete"); return; }
+      setMe(data);
+      await loadAll();
+      enterApp();
+    };
+    const back = $("#who-back");
+    if (back) back.onclick = () => showWho("pick");
+    return;
+  }
+
+  // pick
+  box.innerHTML = `
+    <div class="logo">👋</div>
+    <h1>Chi sei?</h1>
+    <p>${persons.length ? "Scegli il tuo nome, poi il codice." : "Nessuno si è ancora registrato: comincia tu."}</p>
+    ${persons.length ? `<div class="who-list">${persons.map(p =>
+      `<button type="button" data-who="${esc(p.name)}">${esc(p.name)}</button>`).join("")}</div>` : ""}
+    <button type="button" class="ghost" id="who-new" style="margin-top:16px;width:100%">Sono nuovo, registrami</button>`;
+  box.querySelectorAll("[data-who]").forEach(b => {
+    b.onclick = () => showWho("code", b.dataset.who);
+  });
+  $("#who-new").onclick = () => showWho("register");
+}
+
+function setMe(person) {
+  me = person.name; meId = person.id;
+  localStorage.setItem("demo-whoami", me);
+  localStorage.setItem("demo-person-id", meId);
+}
+
+function forgetMe() {
+  me = ""; meId = "";
+  localStorage.removeItem("demo-whoami");
+  localStorage.removeItem("demo-person-id");
+}
+
+$("#whoami-chip").onclick = () => { tab = "profilo"; enterApp(); };
+
+async function start() {
+  await loadAll();
+  if (!hasSchema) { show("app"); render(); return; }
+  // il profilo salvato vale finché esiste ancora nel database
+  const mine = persons.find(p => p.id === meId) || personByName(me);
+  if (!mine) { forgetMe(); showWho(persons.length ? "pick" : "register"); return; }
+  setMe(mine);
+  enterApp();
+}
+
+function enterApp() {
+  show("app");
+  $("#whoami-chip").textContent = me;
+  render();
+  subscribeRealtime();
+}
+
+// ── Dati ────────────────────────────────────────────────────
+async function loadAll() {
+  const [d, r, f, p] = await Promise.all([
+    db.from("demos").select("*").order("position"),
+    db.from("demo_runs").select("*").order("created_at"),
+    db.from("demo_favorites").select("*"),
+    db.from("demo_people").select("*").order("name"),
+  ]);
+  hasSchema = !d.error && !f.error && !p.error;
+  demos = d.data || [];
+  runs = r.data || [];
+  favs = f.data || [];
+  persons = p.data || [];
+}
+
+let rtChannel = null, reloadTimer = null;
+function subscribeRealtime() {
+  if (rtChannel) return;
+  rtChannel = db.channel("demo-changes")
+    .on("postgres_changes", { event: "*", schema: "public" }, () => {
+      clearTimeout(reloadTimer);
+      reloadTimer = setTimeout(async () => { await loadAll(); render(); }, 400);
+    })
+    .subscribe();
+}
+document.addEventListener("visibilitychange", async () => {
+  if (!document.hidden && !views.app.classList.contains("hidden")) { await loadAll(); render(); }
+});
+async function refresh() { await loadAll(); render(); }
+
+// ── Letture ─────────────────────────────────────────────────
+const runsOf = (id) => runs.filter(r => r.demo_id === id);
+const lastRun = (id) => { const a = runsOf(id); return a.length ? a[a.length - 1] : null; };
+const recentRuns = (id, days = 30) => runsOf(id).filter(r => r.created_at >= daysAgo(days)).length;
+const demoOf = (id) => demos.find(d => d.id === id) || null;
+const stepsOf = (d) => Array.isArray(d?.steps) ? d.steps : [];
+const benefitsOf = (d) => Array.isArray(d?.benefits) ? d.benefits : [];
+const inCatalog = () => demos.filter(d => d.status !== "ritirata");
+const isFav = (id) => favs.some(f => f.demo_id === id && f.person_name === me);
+const myFavs = () => favs.filter(f => f.person_name === me);
+const favCount = (id) => favs.filter(f => f.demo_id === id).length;
+const myRuns = () => runs.filter(r => r.actor_name === me);
+
+// L'ordine dell'elenco: prima le pronte, poi le bozze; a parità,
+// quelle usate di recente più in alto.
+function catalogSorted(list) {
+  return list.slice().sort((a, b) =>
+    ((a.status === "pronta" ? 0 : 1) - (b.status === "pronta" ? 0 : 1)) ||
+    (recentRuns(b.id) - recentRuns(a.id)) ||
+    ((a.position || 0) - (b.position || 0)) ||
+    a.name.localeCompare(b.name));
+}
+
+// ── Navigazione ─────────────────────────────────────────────
+const TITLES = { elenco: "Demo interattive", preferite: "Preferite", crea: "Crea la demo", profilo: "Profilo" };
+const ICONS = {
+  elenco: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6h11M9 12h11M9 18h11"/><circle cx="4.6" cy="6" r="1.5" fill="currentColor" stroke="none"/><circle cx="4.6" cy="12" r="1.5" fill="currentColor" stroke="none"/><circle cx="4.6" cy="18" r="1.5" fill="currentColor" stroke="none"/></svg>`,
+  preferite: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4.6l2.3 4.7 5.2.8-3.8 3.6.9 5.1-4.6-2.4-4.6 2.4.9-5.1L4.5 10l5.2-.8z"/></svg>`,
+  crea: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 8v8M8 12h8"/></svg>`,
+  profilo: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8.6" r="3.6"/><path d="M4.8 19.6c1-3.4 3.7-5.2 7.2-5.2s6.2 1.8 7.2 5.2"/></svg>`,
+};
+
+function goTab(id, opts = {}) {
+  tab = id;
+  if (id !== "crea") { editingId = null; formMounted = null; }
+  if (opts.editing !== undefined) editingId = opts.editing;
+  render();
+}
+
+function renderNav() {
+  const n = myFavs().length;
+  const items = [
+    { id: "elenco", label: "Elenco" },
+    { id: "preferite", label: n ? `Preferite · ${n}` : "Preferite" },
+    { id: "crea", label: "Crea" },
+    { id: "profilo", label: "Profilo" },
+  ];
+  const nav = $("#nav");
+  nav.innerHTML = items.map(it => `<button data-tab="${it.id}" class="${tab === it.id ? "active" : ""}">
+      <span class="ico">${ICONS[it.id]}</span>${esc(it.label)}</button>`).join("");
+  nav.querySelectorAll("button").forEach(b => {
+    b.onclick = () => goTab(b.dataset.tab, b.dataset.tab === "crea" ? { editing: null } : {});
+  });
+}
+
+function render() {
+  renderNav();
+  $("#tab-title").textContent = tab === "crea" && editingId
+    ? (demoOf(editingId)?.name || "Modifica la demo") : TITLES[tab];
+  $("#whoami-chip").textContent = me;
+  const main = $("#main");
+  if (!hasSchema) {
+    main.innerHTML = `
+      <div class="empty-big">
+        <div class="glyph">✨</div>
+        <h2>Quasi pronto</h2>
+        <p>Manca il passaggio sul database.<br>Esegui <strong>schema.sql</strong> nel progetto Supabase
+        e il catalogo si accende da solo.</p>
+      </div>`;
+    return;
+  }
+  if (tab === "elenco") renderElenco(main);
+  else if (tab === "preferite") renderPreferite(main);
+  else if (tab === "crea") renderCrea(main);
+  else renderProfilo(main);
+}
+
+// ── Scheda di una demo ──────────────────────────────────────
+function demoCard(d) {
+  const open = openIds.has(d.id);
+  const n = runsOf(d.id).length;
+  const last = lastRun(d.id);
+  const steps = stepsOf(d);
+  const bens = benefitsOf(d);
+  const fav = isFav(d.id);
+  const summary = [
+    d.who || null,
+    n ? `fatta ${n} volt${n === 1 ? "a" : "e"}` : "mai fatta",
+    last ? `ultima: ${last.actor_name}` : null,
+  ].filter(Boolean).join(" · ");
+
+  return `<div class="card" data-id="${d.id}">
+    <div class="row spread d-summary" data-toggle="${d.id}">
+      <div style="min-width:0">
+        <div class="d-title">
+          <h3>${esc(d.name)}</h3>
+          <button class="star ${fav ? "on" : ""}" data-act="fav" data-id="${d.id}"
+            aria-pressed="${fav}" title="${fav ? "Togli dalle preferite" : "Metti tra le preferite"}">
+            ${fav ? "★" : "☆"}</button>
+        </div>
+        <div class="sub">${esc(summary)}</div>
+      </div>
+      <span class="badge ${d.status === "pronta" ? "done" : "off"}">${d.status === "pronta" ? "Pronta" : "Bozza"}</span>
+    </div>
+    <div class="dmeta">
+      <span>${esc(d.category)}</span>
+      <span class="dur">${esc(d.duration)} · ${DUR_HINT[d.duration] || ""}</span>
+      <span class="lev-${esc(d.level)}">${esc(d.level)}</span>
+      ${favCount(d.id) ? `<span class="fav">★ ${favCount(d.id)}</span>` : ""}
+      <button class="edit-chip" data-act="edit" data-id="${d.id}">✏️ Modifica</button>
+    </div>
+    ${!open ? "" : `
+    ${d.hook ? `<div class="hook">“${esc(d.hook)}”</div>` : ""}
+    ${steps.length ? `<div class="dsteps">${steps.map(s => `<div class="dstep"><i></i><span>${esc(s)}</span></div>`).join("")}</div>`
+      : `<div class="dline">Nessun passo scritto: aprila in modifica e racconta cosa dire al cliente.</div>`}
+    ${bens.length ? `<div class="dbens">
+      <div class="dbens-t">Cosa ci guadagna il cliente</div>
+      ${bens.map(b => `<div class="dben"><i>✓</i><span>${esc(b)}</span></div>`).join("")}
+    </div>` : ""}
+    ${d.needs ? `<div class="dline">🧰 <b>Serve:</b> ${esc(d.needs)}</div>` : ""}
+    ${d.owner ? `<div class="dline">👤 <b>La cura:</b> ${esc(d.owner)}</div>` : ""}
+    <div class="acts">
+      <button class="grow" data-act="run" data-id="${d.id}">✓ L'ho fatta</button>
+      <button class="ghost small" data-act="status" data-id="${d.id}">${d.status === "pronta" ? "Rimetti in bozza" : "Segna pronta"}</button>
+      <button class="ghost small" data-act="edit" data-id="${d.id}">✏️ Modifica</button>
+    </div>`}
+  </div>`;
+}
+
+// I gesti sulle schede sono gli stessi ovunque compaiano.
+function wireCards(main) {
+  main.querySelectorAll("[data-toggle]").forEach(el => {
+    el.onclick = (e) => {
+      if (e.target.closest("[data-act]")) return; // la stella non apre la scheda
+      const id = el.dataset.toggle;
+      openIds.has(id) ? openIds.delete(id) : openIds.add(id);
+      render();
+    };
+  });
+  main.querySelectorAll("[data-act=fav]").forEach(b => {
+    b.onclick = async (e) => { e.stopPropagation(); await toggleFav(b.dataset.id); };
+  });
+  main.querySelectorAll("[data-act=status]").forEach(b => {
+    b.onclick = async () => {
+      const d = demoOf(b.dataset.id);
+      const status = d.status === "pronta" ? "bozza" : "pronta";
+      const { error } = await db.from("demos")
+        .update({ status, updated_at: new Date().toISOString() }).eq("id", d.id);
+      if (error) { toast("Errore nel salvataggio"); return; }
+      await refresh();
+    };
+  });
+  main.querySelectorAll("[data-act=run]").forEach(b => {
+    b.onclick = () => openRunDialog(demoOf(b.dataset.id));
+  });
+  main.querySelectorAll("[data-act=edit]").forEach(b => {
+    b.onclick = () => goTab("crea", { editing: b.dataset.id });
+  });
+}
+
+async function toggleFav(id) {
+  const row = favs.find(f => f.demo_id === id && f.person_name === me);
+  if (row) {
+    const { error } = await db.from("demo_favorites").delete().eq("id", row.id);
+    if (error) { toast("Errore nel salvataggio"); return; }
+    toast("Tolta dalle preferite");
+  } else {
+    const { error } = await db.from("demo_favorites").insert({ demo_id: id, person_name: me });
+    if (error) { toast("Errore nel salvataggio"); return; }
+    toast("Tra le preferite");
+  }
+  await refresh();
+}
+
+// ── Elenco ──────────────────────────────────────────────────
+function renderElenco(main) {
+  const list = inCatalog()
+    .filter(d => catFilter === "tutte" || d.category === catFilter)
+    .filter(d => !query || (d.name + " " + (d.hook || "") + " " + (d.who || "") + " "
+      + stepsOf(d).join(" ") + " " + benefitsOf(d).join(" "))
+      .toLowerCase().includes(query.toLowerCase()));
+  const used = CATS.filter(c => inCatalog().some(d => d.category === c));
+  const sorted = catalogSorted(list);
+
+  // Raggruppate per prodotto: sul reparto si cerca così, non per nome.
+  const groups = [];
+  for (const d of sorted) {
+    const g = groups.find(x => x.cat === d.category);
+    if (g) g.items.push(d); else groups.push({ cat: d.category, items: [d] });
+  }
+
+  main.innerHTML = `
+    <div class="section-head"><h2>${inCatalog().length} demo in catalogo</h2>
+      <button class="small" id="go-crea">+ Crea</button></div>
+    <input type="search" id="q" placeholder="Cerca una demo, un cliente, un passo" value="${esc(query)}">
+    <div class="chips filters" style="margin-top:12px">
+      <button type="button" class="fchip" data-cat="tutte" aria-pressed="${catFilter === "tutte"}">Tutte</button>
+      ${used.map(c => `<button type="button" class="fchip" data-cat="${esc(c)}" aria-pressed="${catFilter === c}">${esc(c)}</button>`).join("")}
+    </div>
+    ${groups.map(g => `<div class="cat-head">${esc(g.cat)}</div>${g.items.map(demoCard).join("")}`).join("")}
+    ${sorted.length ? "" : `<div class="empty">Nessuna demo qui.<br>${query || catFilter !== "tutte" ? "Prova a togliere il filtro." : "Scrivi la prima con “+ Crea”."}</div>`}`;
+
+  $("#go-crea").onclick = () => goTab("crea", { editing: null });
+
+  const q = $("#q");
+  q.oninput = () => {
+    query = q.value;
+    clearTimeout(q._h);
+    q._h = setTimeout(() => {
+      const pos = q.selectionStart;
+      render();
+      const nq = $("#q"); nq.focus(); nq.setSelectionRange(pos, pos);
+    }, 250);
+  };
+  main.querySelectorAll("[data-cat]").forEach(b => {
+    b.onclick = () => { catFilter = b.dataset.cat; render(); };
+  });
+  wireCards(main);
+}
+
+// ── Preferite ───────────────────────────────────────────────
+function renderPreferite(main) {
+  const mine = myFavs()
+    .map(f => demoOf(f.demo_id))
+    .filter(Boolean)
+    .filter(d => d.status !== "ritirata");
+  const sorted = catalogSorted(mine);
+
+  main.innerHTML = `
+    <div class="section-head"><h2>Le tue preferite</h2></div>
+    <div class="sub" style="margin:0 4px 14px">Le demo che vuoi avere sottomano: quelle che ti riescono
+      bene e quelle che stai imparando.</div>
+    ${sorted.length ? sorted.map(demoCard).join("")
+      : `<div class="empty">Ancora nessuna preferita.<br>Nell'elenco, tocca la stella accanto al nome di una demo.</div>`}`;
+
+  wireCards(main);
+}
+
+// ── Crea la demo ────────────────────────────────────────────
+function stepRow(value = "") {
+  return `<div class="step-ed">
+    <i></i>
+    <input type="text" name="step" value="${esc(value)}" placeholder="Chiedi al cliente di…">
+    <button type="button" class="x" data-del title="Togli il passo">✕</button>
+  </div>`;
+}
+
+function benefitRow(value = "") {
+  return `<div class="step-ed ben">
+    <i>✓</i>
+    <input type="text" name="benefit" value="${esc(value)}" placeholder="Così il cliente…">
+    <button type="button" class="x" data-del title="Togli il vantaggio">✕</button>
+  </div>`;
+}
+
+function renderCrea(main) {
+  const d = editingId ? demoOf(editingId) : null;
+  if (editingId && !d) { editingId = null; return render(); }
+  // un aggiornamento arrivato da un altro telefono non deve cancellare
+  // quello che stai scrivendo: il modulo si rimonta solo se cambia demo
+  const key = editingId || "nuova";
+  if (formMounted === key && main.querySelector("#demo-form")) return;
+  formMounted = key;
+
+  const opt = (name, values, cur) => values.map(v =>
+    `<option value="${v}" ${cur === v ? "selected" : ""}>${v}${name === "duration" ? ` · ${DUR_HINT[v]}` : ""}</option>`).join("");
+  const steps = stepsOf(d), bens = benefitsOf(d);
+
+  main.innerHTML = `
+    <form id="demo-form">
+      <div class="card">
+        <div class="field" style="margin-top:0"><label>Nome della demo *</label>
+          <input type="text" name="name" value="${esc(d?.name || "")}" placeholder="es. Ripulisci in Foto" required></div>
+        <div class="field"><label>Prodotto</label>
+          <select name="category">${opt("category", CATS, d?.category || "iPhone")}</select></div>
+        <div class="row" style="gap:8px">
+          <div class="field" style="flex:1;min-width:130px"><label>Quanto dura</label>
+            <select name="duration">${opt("duration", DURATIONS, d?.duration || "breve")}</select></div>
+          <div class="field" style="flex:1;min-width:130px"><label>Quanto è difficile</label>
+            <select name="level">${opt("level", LEVELS, d?.level || "facile")}</select></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3>Come si attacca</h3>
+        <div class="field"><label>La frase con cui si apre</label>
+          <input type="text" name="hook" value="${esc(d?.hook || "")}"
+            placeholder="es. Hai già l'iPhone? Guarda cosa fa adesso."></div>
+        <div class="field"><label>A quale cliente sta bene</label>
+          <input type="text" name="who" value="${esc(d?.who || "")}"
+            placeholder="es. chi entra a curiosare, senza un modello in mente"></div>
+      </div>
+
+      <div class="card">
+        <h3>I passaggi da dire al cliente</h3>
+        <div class="sub">Pochi e chiari, nell'ordine in cui si fanno. Scrivili come li diresti:
+          “Chiedi al cliente di aprire la fotocamera dell'iPhone che ha in mano”.</div>
+        <div class="steps-ed" id="steps-ed">
+          ${(steps.length ? steps : ["", "", ""]).map(s => stepRow(s)).join("")}
+        </div>
+        <button type="button" class="ghost small" id="add-step" style="margin-top:10px">+ Aggiungi passo</button>
+      </div>
+
+      <div class="card">
+        <h3>Cosa ci guadagna il cliente</h3>
+        <div class="sub">Come si chiude la demo: un paio di vantaggi concreti, nella sua vita di tutti i giorni.</div>
+        <div class="steps-ed" id="bens-ed">
+          ${(bens.length ? bens : ["", ""]).map(b => benefitRow(b)).join("")}
+        </div>
+        <button type="button" class="ghost small" id="add-ben" style="margin-top:10px">+ Aggiungi vantaggio</button>
+      </div>
+
+      <div class="card">
+        <h3>Il contorno</h3>
+        <div class="field"><label>Cosa serve prima di iniziare</label>
+          <input type="text" name="needs" value="${esc(d?.needs || "")}"
+            placeholder="es. un iPhone demo con qualche foto"></div>
+        <div class="field"><label>Chi la cura</label>
+          <input type="text" name="owner" value="${esc(d?.owner ?? (d ? "" : me))}" placeholder="es. ${esc(me)}"></div>
+        <div class="field"><label>Stato</label>
+          <select name="status">
+            <option value="bozza" ${!d || d.status === "bozza" ? "selected" : ""}>Bozza · si sta ancora scrivendo</option>
+            <option value="pronta" ${d?.status === "pronta" ? "selected" : ""}>Pronta · si può fare in reparto</option>
+            <option value="ritirata" ${d?.status === "ritirata" ? "selected" : ""}>Ritirata · fuori dal catalogo</option>
+          </select></div>
+      </div>
+
+      <div class="acts">
+        <button type="submit" class="grow" id="save-demo">${d ? "Salva le modifiche" : "Aggiungi al catalogo"}</button>
+        <button type="button" class="ghost small" id="cancel-demo">Annulla</button>
+      </div>
+      ${d ? `<div class="row" style="margin-top:6px"><button type="button" class="danger small" id="del-demo">Elimina questa demo</button></div>` : ""}
+    </form>`;
+
+  const form = $("#demo-form");
+  // passi e vantaggi si comportano allo stesso modo: una riga si aggiunge,
+  // una riga si toglie, l'ultima rimasta si svuota invece di sparire
+  const wireList = (box) => {
+    box.querySelectorAll("[data-del]").forEach(b => {
+      b.onclick = () => {
+        const rows = box.querySelectorAll(".step-ed");
+        if (rows.length <= 1) { b.closest(".step-ed").querySelector("input").value = ""; return; }
+        b.closest(".step-ed").remove();
+      };
+    });
+  };
+  const addTo = (box, html) => {
+    box.insertAdjacentHTML("beforeend", html);
+    wireList(box);
+    box.querySelector(".step-ed:last-child input").focus();
+  };
+  const stepsEd = $("#steps-ed"), bensEd = $("#bens-ed");
+  wireList(stepsEd); wireList(bensEd);
+  $("#add-step").onclick = () => addTo(stepsEd, stepRow());
+  $("#add-ben").onclick = () => addTo(bensEd, benefitRow());
+  $("#cancel-demo").onclick = () => goTab("elenco");
+  if (d) $("#del-demo").onclick = async () => {
+    if (!confirm(`Eliminare “${d.name}”? Sparisce anche il registro di quando è stata fatta.`)) return;
+    const { error } = await db.from("demos").delete().eq("id", d.id);
+    if (error) { toast("Errore nell'eliminazione"); return; }
+    toast("Demo eliminata");
+    goTab("elenco");
+    await refresh();
+  };
+
+  form.onsubmit = async (e) => {
+    e.preventDefault();
+    const fd = new FormData(form);
+    const row = {
+      name: (fd.get("name") || "").trim(),
+      category: fd.get("category"),
+      hook: (fd.get("hook") || "").trim() || null,
+      who: (fd.get("who") || "").trim() || null,
+      duration: fd.get("duration"),
+      level: fd.get("level"),
+      steps: fd.getAll("step").map(s => s.trim()).filter(Boolean),
+      benefits: fd.getAll("benefit").map(s => s.trim()).filter(Boolean),
+      needs: (fd.get("needs") || "").trim() || null,
+      owner: (fd.get("owner") || "").trim() || null,
+      status: fd.get("status"),
+      updated_at: new Date().toISOString(),
+    };
+    if (!row.name) { toast("Serve un nome"); return; }
+    const btn = $("#save-demo");
+    btn.disabled = true;
+    if (d) {
+      const { error } = await db.from("demos").update(row).eq("id", d.id);
+      btn.disabled = false;
+      if (error) { toast("Errore nel salvataggio"); return; }
+      toast("Salvata");
+      openIds.add(d.id);
+    } else {
+      row.created_by = me;
+      row.position = demos.reduce((m, x) => Math.max(m, x.position || 0), 0) + 1;
+      const { data, error } = await db.from("demos").insert(row).select().single();
+      btn.disabled = false;
+      if (error) { toast("Errore nel salvataggio"); return; }
+      toast("Aggiunta al catalogo");
+      openIds.add(data.id);
+    }
+    goTab("elenco");
+    await refresh();
+  };
+}
+
+// ── "L'ho fatta": il registro ───────────────────────────────
+function chipRow(name, values, current) {
+  return `<div class="chips" data-chips="${name}">
+    ${values.map(v => `<button type="button" class="fchip" data-v="${esc(v)}"
+        aria-pressed="${v === current}">${esc(v)}</button>`).join("")}
+    <input type="hidden" name="${name}" value="${esc(current || "")}">
+  </div>`;
+}
+
+function wireChips(form) {
+  form.querySelectorAll("[data-chips]").forEach(box => {
+    const hidden = box.querySelector("input[type=hidden]");
+    box.querySelectorAll("button[data-v]").forEach(b => {
+      b.onclick = () => {
+        box.querySelectorAll("button[data-v]").forEach(x => x.setAttribute("aria-pressed", "false"));
+        b.setAttribute("aria-pressed", "true");
+        hidden.value = b.dataset.v;
+      };
+    });
+  });
+}
+
+function openRunDialog(d) {
+  if (!d) return;
+  openDialog("L'ho fatta", `
+    <p class="sub">${esc(d.name)}</p>
+    <div class="field"><label>Com'è andata</label>${chipRow("outcome", OUTCOMES, "ok")}</div>
+    <div class="field"><label>Una riga, se serve</label>
+      <input type="text" name="note" placeholder="es. l'ha rifatta da sola sul suo iPhone"></div>
+    <div class="sub" style="margin-top:8px">Resta scritto: una demo fatta non si cancella.</div>`,
+    async (fd) => {
+      const { error } = await db.from("demo_runs").insert({
+        demo_id: d.id,
+        actor_name: me,
+        outcome: fd.get("outcome") || "ok",
+        note: (fd.get("note") || "").trim() || null,
+      });
+      if (error) { toast("Errore nel salvataggio"); return false; }
+      toast("Segnata");
+      await refresh();
+    },
+    wireChips);
+}
+
+// ── Profilo ─────────────────────────────────────────────────
+function renderProfilo(main) {
+  const mine = myRuns();
+  const mine30 = mine.filter(r => r.created_at >= daysAgo(30)).length;
+  const scritte = demos.filter(d => d.created_by === me).length;
+  const list = inCatalog();
+  const pronte = list.filter(d => d.status === "pronta").length;
+  const team30 = runs.filter(r => r.created_at >= daysAgo(30)).length;
+  const mai = list.filter(d => !runsOf(d.id).length);
+  const ultime = mine.slice().reverse().slice(0, 8);
+
+  // quali demo fai più spesso: è il ritratto di come lavori in reparto
+  const perDemo = {};
+  mine.forEach(r => { perDemo[r.demo_id] = (perDemo[r.demo_id] || 0) + 1; });
+  const tue = Object.entries(perDemo).sort((a, b) => b[1] - a[1]).slice(0, 5)
+    .map(([id, n]) => ({ d: demoOf(id), n })).filter(x => x.d);
+  const topN = tue.length ? tue[0].n : 1;
+
+  main.innerHTML = `
+    <div class="card">
+      <div class="row spread">
+        <div><h3>${esc(me)}</h3><div class="sub">Il nome che finisce accanto alle demo che fai</div></div>
+        <button class="ghost small" id="edit-name">Cambia nome</button>
+      </div>
+      <div class="row" style="margin-top:12px">
+        <button class="ghost small" id="edit-code">Cambia il codice</button>
+        <span class="sub">6 cifre, per ritrovarti da un altro telefono</span>
+      </div>
+    </div>
+
+    <div class="stats">
+      <div class="stat"><b>${mine.length}</b><span>Demo fatte</span></div>
+      <div class="stat"><b>${mine30}</b><span>Ultimi 30 gg</span></div>
+      <div class="stat"><b>${myFavs().length}</b><span>Preferite</span></div>
+      <div class="stat"><b>${scritte}</b><span>Scritte da te</span></div>
+    </div>
+
+    ${tue.length ? `<div class="section-head" style="margin-top:22px"><h2>Quelle che fai più spesso</h2></div>
+      ${tue.map(({ d, n }) => `<div class="rank">
+        <span class="rank-name">${esc(d.name)}<em>${esc(d.category)}</em></span>
+        <span class="bar"><i class="o" style="width:${(n / topN) * 100}%"></i></span>
+        <span class="rank-num">${n}</span>
+      </div>`).join("")}` : ""}
+
+    ${ultime.length ? `<div class="section-head" style="margin-top:22px"><h2>Le tue ultime</h2></div>
+      <div class="feed">${ultime.map(r => {
+        const d = demoOf(r.demo_id);
+        return `<div class="fitem">
+          <span class="fdot" style="background:${OUT_COLOR[r.outcome] || "var(--line)"}"></span>
+          <span class="ftxt">
+            <span class="fwk">${fmtTs(r.created_at)} · ${esc(r.outcome)}</span>
+            <span class="fbody"><b>${esc(d ? d.name : "demo eliminata")}</b>${r.note ? ` — ${esc(r.note)}` : ""}</span>
+          </span>
+        </div>`;
+      }).join("")}</div>`
+      : `<div class="empty">Non hai ancora segnato nessuna demo.<br>Aprine una nell'elenco e tocca “L'ho fatta”.</div>`}
+
+    <div class="section-head" style="margin-top:22px"><h2>Il catalogo del team</h2></div>
+    <div class="stats">
+      <div class="stat"><b>${pronte}</b><span>Pronte</span></div>
+      <div class="stat"><b>${team30}</b><span>Fatte 30 gg</span></div>
+      <div class="stat"><b>${mai.length}</b><span>Mai fatte</span></div>
+    </div>
+    ${mai.length ? `<div class="sub" style="margin:2px 4px 8px">Scritte ma mai fatte: o non servono, o nessuno se le ricorda.</div>
+      <div class="chips">${mai.map(d => `<button type="button" class="fchip" data-go="${d.id}">${esc(d.name)}</button>`).join("")}</div>` : ""}
+
+    <div class="row" style="margin-top:26px">
+      <button class="ghost small" id="logout">Esci dall'app</button>
+    </div>`;
+
+  $("#edit-name").onclick = () => {
+    openDialog("Come ti chiami", `
+      <div class="field"><label>Il tuo nome</label>
+        <input type="text" name="name" value="${esc(me)}" required></div>
+      <div class="sub" style="margin-top:8px">Le demo già segnate restano com'erano: il registro non si riscrive.</div>`,
+      async (fd) => {
+        const v = (fd.get("name") || "").trim();
+        if (v.length < 2) { toast("Scrivi il tuo nome"); return false; }
+        if (v === me) return;
+        if (personByName(v)) { toast("Questo nome è già registrato"); return false; }
+        const previous = me;
+        const { error } = await db.from("demo_people").update({ name: v }).eq("id", meId);
+        if (error) { toast("Errore nel salvataggio"); return false; }
+        me = v; localStorage.setItem("demo-whoami", me);
+        // le preferite seguono la persona, non il nome vecchio
+        await db.from("demo_favorites").update({ person_name: me }).eq("person_name", previous);
+        await refresh();
+      });
+  };
+
+  $("#edit-code").onclick = () => {
+    openDialog("Cambia il codice", `
+      <div class="field"><label>Codice attuale</label>
+        <input type="password" name="old" inputmode="numeric" pattern="[0-9]*" maxlength="6"
+          placeholder="••••••" autocomplete="off" required></div>
+      <div class="field"><label>Nuovo codice</label>
+        <input type="password" name="new" inputmode="numeric" pattern="[0-9]*" maxlength="6"
+          placeholder="6 cifre" autocomplete="off" required></div>
+      <div class="field"><label>Ripeti il nuovo codice</label>
+        <input type="password" name="new2" inputmode="numeric" pattern="[0-9]*" maxlength="6"
+          placeholder="6 cifre" autocomplete="off" required></div>`,
+      async (fd) => {
+        const p = persons.find(x => x.id === meId);
+        if (!p) { toast("Profilo non trovato"); return false; }
+        if (await hashCode(p.salt, (fd.get("old") || "").trim()) !== p.code_hash) {
+          toast("Codice attuale sbagliato"); return false;
+        }
+        const nuovo = (fd.get("new") || "").trim();
+        if (!isCode(nuovo)) { toast("Il codice è di 6 cifre"); return false; }
+        if (nuovo !== (fd.get("new2") || "").trim()) { toast("I due codici non coincidono"); return false; }
+        const salt = newSalt();
+        const { error } = await db.from("demo_people")
+          .update({ salt, code_hash: await hashCode(salt, nuovo) }).eq("id", meId);
+        if (error) { toast("Errore nel salvataggio"); return false; }
+        toast("Codice aggiornato");
+        await refresh();
+      });
+  };
+  main.querySelectorAll("[data-go]").forEach(b => {
+    b.onclick = () => { catFilter = "tutte"; query = ""; openIds.add(b.dataset.go); goTab("elenco"); };
+  });
+  $("#logout").onclick = async () => {
+    if (!confirm("Esci da questo telefono? Per rientrare servono la password del team e il tuo codice.")) return;
+    forgetMe();
+    await db.auth.signOut();
+    rtChannel = null;
+    show("login");
+  };
+}
+
+// ── Dialog generico ─────────────────────────────────────────
+function openDialog(title, fieldsHtml, onSubmit, onOpen) {
+  const dlg = $("#dlg"), form = $("#dlg-form");
+  form.innerHTML = `<h3>${title}</h3>${fieldsHtml}
+    <div class="dialog-actions">
+      <button type="button" class="ghost" id="dlg-cancel">Annulla</button>
+      <button type="submit">Salva</button>
+    </div>`;
+  form.onsubmit = async (e) => {
+    e.preventDefault();
+    // chi salva può restituire false per tenere aperto il foglio
+    // senza far perdere quello che è stato scritto
+    if (await onSubmit(new FormData(form)) === false) return;
+    dlg.close();
+  };
+  form.querySelector("#dlg-cancel").onclick = () => dlg.close();
+  if (onOpen) onOpen(form);
+  dlg.showModal();
+}
+
+// ── Avvio ───────────────────────────────────────────────────
+const { data: { session } } = await db.auth.getSession();
+if (session) { await start(); } else { show("login"); }
+</script>
+</body>
+</html>
