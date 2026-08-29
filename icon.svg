@@ -1,9 +1,9 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024">
-  <!-- Demo Interattive — il telefono che il cliente tocca, e una frase che
-       arriva da fuori: la bolla è intera, la coda esce dalla cornice, come nei
-       fumetti quando chi parla resta fuori dalla vignetta.
-       Il filo di sfondo attorno alla bolla la stacca dal telefono; la bolla
-       sta alta, così copre solo lo spigolo del dispositivo. -->
+  <!-- Demo Interattive — il telefono che il cliente tocca e una frase che gli
+       arriva: la bolla sta in alto, la coda parte larga dal suo fondo e scende
+       di sbieco verso il basso a destra.
+       Il filo di sfondo attorno alla bolla la stacca dal dispositivo, così a
+       icona piccola le due forme non si impastano. -->
   <defs>
     <linearGradient id="sfondo" x1="0" y1="0" x2="1" y2="1">
       <stop offset="0" stop-color="#a78bfa"/>
@@ -18,7 +18,8 @@
     <circle cx="426" cy="533" r="46" fill="url(#sfondo)"/>
     <circle cx="426" cy="533" r="101" fill="none" stroke="url(#sfondo)" stroke-width="25" opacity=".55"/>
 
-    <path d="M556 108h270a60 60 0 0 1 60 60v24l294 44-294 100v24a60 60 0 0 1-60 60H556a60 60 0 0 1-60-60V168a60 60 0 0 1 60-60z"
+    <path d="M556 108 H826 A60 60 0 0 1 886 168 V320 A60 60 0 0 1 826 380
+             H820 L902 548 L660 380 H556 A60 60 0 0 1 496 320 V168 A60 60 0 0 1 556 108 Z"
       fill="#ffffff" stroke="url(#sfondo)" stroke-width="30"/>
   </g>
 </svg>
