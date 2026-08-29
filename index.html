@@ -358,6 +358,11 @@ const SHARED_EMAIL = "marcocasati+storetasks@gmail.com"; // utente condiviso in 
 // indietro: true qui, e in fondo a quel file ci sono i drop policy.
 const RICHIEDI_PASSWORD = false;
 
+// Ponte finché admin.sql non gira: questi nomi sono amministratori anche
+// senza la colonna "admin" sul database. Quando la colonna c'è, il ruolo
+// lo decide lei e questa lista si può svuotare.
+const ADMIN_PER_NOME = ["Admin", "Marco"];
+
 const db = createClient(SUPABASE_URL, SUPABASE_KEY);
 
 // ── Stato ───────────────────────────────────────────────────
@@ -611,8 +616,9 @@ const myFavs = () => favs.filter(f => f.person_name === me);
 const favCount = (id) => favs.filter(f => f.demo_id === id).length;
 const myRuns = () => runs.filter(r => r.actor_name === me);
 const meStesso = () => persons.find(p => p.id === meId) || null;
-const isAdmin = () => !!meStesso()?.admin;
-const nAdmin = () => persons.filter(p => p.admin).length;
+const adminDi = (p) => !!p && (p.admin === true || ADMIN_PER_NOME.includes(p.name));
+const isAdmin = () => adminDi(meStesso());
+const nAdmin = () => persons.filter(adminDi).length;
 
 // Una demo pubblicata la tocca solo un amministratore; la propria proposta,
 // finché è in attesa, resta in mano a chi l'ha scritta.
@@ -1144,7 +1150,7 @@ function renderProfilo(main) {
       return `<div class="t-row">
         <span class="t-txt">
           <span class="t-name">${esc(p.name)}${p.id === meId ? " · tu" : ""}${
-            p.admin ? ` <span class="ruolo">admin</span>` : ""}</span>
+            adminDi(p) ? ` <span class="ruolo">admin</span>` : ""}</span>
           <span class="t-meta">${hasCode(p) ? "codice impostato" : "deve ancora scegliere il codice"}
             · ${suoi} demo fatte</span>
         </span>
@@ -1239,7 +1245,7 @@ function renderProfilo(main) {
           hasCode(p) ? "codice impostato" : "deve ancora scegliere il codice"}</div>
         <div class="row" style="margin-top:14px;gap:8px">
           <button type="button" class="ghost small" id="toggle-admin">${
-            p.admin ? "Togli amministratore" : "Rendi amministratore"}</button>
+            adminDi(p) ? "Togli amministratore" : "Rendi amministratore"}</button>
           ${hasCode(p) ? `<button type="button" class="ghost small" id="reset-code">Azzera il codice</button>` : ""}
           <button type="button" class="danger small" id="del-person">Elimina</button>
         </div>
@@ -1262,14 +1268,18 @@ function renderProfilo(main) {
         (form) => {
           form.querySelector("#toggle-admin").onclick = async () => {
             // il catalogo non può restare senza nessuno che approvi
-            if (p.admin && nAdmin() <= 1) { toast("Serve almeno un amministratore"); return; }
-            const admin = !p.admin;
+            if (adminDi(p) && nAdmin() <= 1) { toast("Serve almeno un amministratore"); return; }
+            const admin = !adminDi(p);
             if (!confirm(admin ? `Rendere ${p.name} amministratore?`
                                : `Togliere il ruolo di amministratore a ${p.name}?`)) return;
             const { error } = await db.from("demo_people").update({ admin }).eq("id", p.id);
-            if (error) { toast("Errore nel salvataggio"); return; }
+            // finché admin.sql non gira la colonna non esiste e il database rifiuta
+            if (error) { toast("Il ruolo si passa solo dopo admin.sql sul database"); return; }
             $("#dlg").close();
-            toast(admin ? "Ora è amministratore" : "Ruolo tolto");
+            // un nome nella lista del codice resta amministratore comunque
+            toast(!admin && ADMIN_PER_NOME.includes(p.name)
+              ? "Resta amministratore: il nome è nella lista del codice"
+              : admin ? "Ora è amministratore" : "Ruolo tolto");
             await refresh();
           };
           const reset = form.querySelector("#reset-code");

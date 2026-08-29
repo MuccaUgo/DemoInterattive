@@ -47,7 +47,11 @@ codici, e passa il ruolo ad altri (*Gestisci → Rendi amministratore*). L'ultim
 amministratore non si può togliere: il catalogo non resta senza nessuno che
 approvi.
 
-Il primo amministratore si crea con `admin.sql`. Chi aggiungi trova già il suo
+Il primo amministratore si crea con `admin.sql`. Finché quel file non gira, il
+ruolo arriva dalla lista `ADMIN_PER_NOME` in cima allo `<script>`: i nomi lì
+dentro sono amministratori comunque, ed è così che **Admin** lo è già oggi.
+Quando la colonna esiste, il ruolo lo decide il database e quella lista si può
+svuotare. Chi aggiungi trova già il suo
 nome all'ingresso e sceglie il codice da sé al primo accesso; chi lo dimentica,
 *Gestisci → Azzera il codice*.
 
