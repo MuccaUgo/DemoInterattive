@@ -114,9 +114,39 @@
     color: var(--muted); text-transform: uppercase; letter-spacing: .05em;
   }
   .avviso {
+    display: block; width: 100%; text-align: left;
+    font-family: inherit; border: none; cursor: pointer;
     background: var(--warn-soft); color: var(--warn); border-radius: 13px;
     padding: 10px 13px; font-size: .85rem; font-weight: 600; margin-bottom: 12px;
   }
+  .badge.no { background: rgba(211, 63, 73, .12); color: var(--danger); }
+  /* Il verdetto dell'amministratore: chi ha proposto la demo deve capire
+     al volo perché non è stata pubblicata e cosa deve cambiare. */
+  .verdetto {
+    margin-top: 12px; padding: 11px 13px; border-radius: 13px;
+    background: var(--accent-soft); font-size: .88rem; line-height: 1.45;
+  }
+  .verdetto.no { background: rgba(211, 63, 73, .10); }
+  .verdetto b { display: block; font-size: .74rem; text-transform: uppercase;
+    letter-spacing: .05em; color: var(--accent); margin-bottom: 4px; }
+  .verdetto.no b { color: var(--danger); }
+  .verdetto .firma { display: block; margin-top: 5px; font-size: .74rem; color: var(--muted); }
+  .segnal { margin-top: 14px; display: flex; flex-direction: column; gap: 8px; }
+  .segn {
+    padding: 10px 12px; border-radius: 12px;
+    border: 1px solid var(--line); background: var(--bg);
+  }
+  .segn.chiusa { opacity: .6; }
+  .sg-txt { display: block; font-size: .88rem; line-height: 1.4; }
+  .sg-meta { display: block; margin-top: 3px; font-size: .74rem; color: var(--muted); }
+  .sg-acts { display: flex; gap: 8px; margin-top: 8px; }
+  .hactions { display: flex; align-items: center; gap: 8px; }
+  #refresh-btn {
+    background: none; color: var(--muted); padding: 6px 8px;
+    font-size: 1.1rem; line-height: 1;
+  }
+  #refresh-btn.gira { animation: gira .8s linear infinite; color: var(--accent); }
+  @keyframes gira { to { transform: rotate(360deg); } }
   .empty { text-align: center; color: var(--muted); padding: 30px 10px; font-size: .9rem; }
   .empty-big { text-align: center; color: var(--muted); padding: 90px 24px 30px; }
   .empty-big .glyph { font-size: 2.6rem; margin-bottom: 12px; }
@@ -330,7 +360,10 @@
 <div id="view-app" class="hidden">
   <header>
     <h1 id="tab-title">Catalogo</h1>
-    <button id="whoami-chip" title="Cambia nome"></button>
+    <div class="hactions">
+      <button id="refresh-btn" title="Aggiorna" aria-label="Aggiorna">&#8635;</button>
+      <button id="whoami-chip" title="Cambia nome"></button>
+    </div>
   </header>
   <main id="main"></main>
   <nav id="nav"></nav>
@@ -371,7 +404,7 @@ const LEVELS = ["facile", "media", "avanzata"];
 const OUTCOMES = ["wow", "ok", "fiacca"];
 const OUT_COLOR = { wow: "var(--ok)", ok: "var(--accent)", fiacca: "var(--warn)" };
 
-let demos = [], runs = [], favs = [], persons = [];
+let demos = [], runs = [], favs = [], persons = [], segnal = [];
 let hasSchema = true;
 let tab = "elenco";
 let me = localStorage.getItem("demo-whoami") || "";
@@ -547,6 +580,23 @@ function forgetMe() {
 
 $("#whoami-chip").onclick = () => { tab = "profilo"; enterApp(); };
 
+// Un tasto solo per due cose che in reparto si confondono: prendere le
+// novità dal database e ricaricare la versione nuova dell'app. Se si sta
+// scrivendo una demo non si ricarica niente: si aggiornano solo i dati.
+$("#refresh-btn").onclick = async () => {
+  const b = $("#refresh-btn");
+  if (b.classList.contains("gira")) return;
+  b.classList.add("gira");
+  if (tab === "crea" && formMounted) {
+    await loadAll();
+    render();
+    b.classList.remove("gira");
+    toast("Proposte aggiornate");
+    return;
+  }
+  location.replace(location.pathname + "?v=" + Date.now());
+};
+
 async function start() {
   await loadAll();
   if (!hasSchema) { show("app"); render(); return; }
@@ -566,17 +616,19 @@ function enterApp() {
 
 // ── Dati ────────────────────────────────────────────────────
 async function loadAll() {
-  const [d, r, f, p] = await Promise.all([
+  const [d, r, f, p, s] = await Promise.all([
     db.from("demos").select("*").order("position"),
     db.from("demo_runs").select("*").order("created_at"),
     db.from("demo_favorites").select("*"),
     db.from("demo_people").select("*").order("name"),
+    db.from("demo_suggestions").select("*").order("id"),
   ]);
   hasSchema = !d.error && !f.error && !p.error;
   demos = d.data || [];
   runs = r.data || [];
   favs = f.data || [];
   persons = p.data || [];
+  segnal = s.data || [];
 }
 
 let rtChannel = null, reloadTimer = null;
@@ -603,9 +655,11 @@ const stepsOf = (d) => Array.isArray(d?.steps) ? d.steps : [];
 const benefitsOf = (d) => Array.isArray(d?.benefits) ? d.benefits : [];
 // Le pubblicate le vedono tutti; le proposte solo chi le ha scritte e gli
 // amministratori; le ritirate restano agli amministratori.
+// Le pubblicate le vedono tutti; le proposte in attesa e quelle rifiutate
+// restano a chi le ha scritte e agli amministratori.
 const inCatalog = () => demos.filter(d =>
   d.status === "pronta" ||
-  (d.status === "bozza" && (isAdmin() || d.created_by === me)) ||
+  (["bozza", "rifiutata"].includes(d.status) && (isAdmin() || d.created_by === me)) ||
   (d.status === "ritirata" && isAdmin()));
 const isFav = (id) => favs.some(f => f.demo_id === id && f.person_name === me);
 const myFavs = () => favs.filter(f => f.person_name === me);
@@ -620,7 +674,13 @@ const nAdmin = () => persons.filter(adminDi).length;
 // Una demo pubblicata la tocca solo un amministratore; la propria proposta,
 // finché è in attesa, resta in mano a chi l'ha scritta.
 const puoModificare = (d) => isAdmin() || (d.status !== "pronta" && d.created_by === me);
+const STATO = { pronta: "Pubblicata", bozza: "Da approvare", rifiutata: "Rifiutata", ritirata: "Ritirata" };
+const STATO_CLASSE = { pronta: "done", bozza: "", rifiutata: "no", ritirata: "off" };
 const daApprovare = () => demos.filter(d => d.status === "bozza");
+const segnalDi = (id) => segnal.filter(s => s.demo_id === id);
+const aperteDi = (id) => segnalDi(id).filter(s => s.status === "aperta");
+const segnalAperte = () => segnal.filter(s => s.status === "aperta"
+  && demos.some(d => d.id === s.demo_id && d.status === "pronta"));
 
 // L'ordine dell'elenco: prima le pronte, poi le bozze; a parità,
 // quelle usate di recente più in alto.
@@ -694,10 +754,11 @@ function demoCard(d, conCategoria = false) {
   const steps = stepsOf(d);
   const bens = benefitsOf(d);
   const fav = isFav(d.id);
+  const inCorso = d.status === "bozza" || d.status === "rifiutata";
   const summary = [
-    d.who || null,
+    inCorso && d.created_by ? `proposta da ${d.created_by}` : (d.who || null),
     n ? `fatta ${n} volt${n === 1 ? "a" : "e"}` : "mai fatta",
-    last ? `ultima: ${last.actor_name}` : null,
+    !inCorso && last ? `ultima: ${last.actor_name}` : null,
   ].filter(Boolean).join(" · ");
 
   return `<div class="card" data-id="${d.id}">
@@ -711,8 +772,7 @@ function demoCard(d, conCategoria = false) {
         </div>
         <div class="sub">${esc(summary)}</div>
       </div>
-      <span class="badge ${d.status === "pronta" ? "done" : d.status === "ritirata" ? "off" : ""}">${
-        d.status === "pronta" ? "Pubblicata" : d.status === "ritirata" ? "Ritirata" : "Da approvare"}</span>
+      <span class="badge ${STATO_CLASSE[d.status] || ""}">${STATO[d.status] || d.status}</span>
     </div>
     <div class="dmeta">
       ${conCategoria ? `<span>${esc(d.category)}</span>` : ""}
@@ -732,10 +792,30 @@ function demoCard(d, conCategoria = false) {
     </div>` : ""}
     ${d.needs ? `<div class="dline">🧰 <b>Serve:</b> ${esc(d.needs)}</div>` : ""}
     ${d.owner ? `<div class="dline">👤 <b>La cura:</b> ${esc(d.owner)}</div>` : ""}
+    ${d.created_by ? `<div class="dline">✍️ <b>Proposta da:</b> ${esc(d.created_by)}</div>` : ""}
+    ${d.review_note ? `<div class="verdetto ${d.status === "rifiutata" ? "no" : ""}">
+      <b>${d.status === "rifiutata" ? "Non pubblicata" : "Nota dell'amministratore"}</b>
+      ${esc(d.review_note)}
+      <span class="firma">${esc(d.reviewed_by || "")}${d.reviewed_at ? ` · ${fmtTs(d.reviewed_at)}` : ""}</span>
+    </div>` : ""}
+    ${segnalDi(d.id).length ? `<div class="segnal">
+      <div class="dbens-t">Segnalazioni</div>
+      ${segnalDi(d.id).slice().reverse().map(s => `<div class="segn ${s.status !== "aperta" ? "chiusa" : ""}">
+        <span class="sg-txt">${esc(s.text)}</span>
+        <span class="sg-meta">${esc(s.actor_name)} · ${fmtTs(s.created_at)}${
+          s.status === "aperta" ? "" : ` · ${esc(s.status)}${s.closed_by ? ` da ${esc(s.closed_by)}` : ""}`}</span>
+        ${isAdmin() && s.status === "aperta" ? `<span class="sg-acts">
+          <button class="ghost small" data-sg-ok="${s.id}">Sistemata</button>
+          <button class="ghost small" data-sg-no="${s.id}">Scarta</button>
+        </span>` : ""}
+      </div>`).join("")}
+    </div>` : ""}
     <div class="acts">
       <button class="grow" data-act="run" data-id="${d.id}">✓ L'ho fatta</button>
-      ${isAdmin() ? `<button class="ghost small" data-act="status" data-id="${d.id}">${
-        d.status === "pronta" ? "Rimetti in attesa" : "✓ Approva e pubblica"}</button>` : ""}
+      ${isAdmin() && d.status !== "pronta" ? `<button class="ghost small" data-act="pubblica" data-id="${d.id}">✓ Approva e pubblica</button>` : ""}
+      ${isAdmin() && d.status === "bozza" ? `<button class="ghost small" data-act="rifiuta" data-id="${d.id}">Rifiuta</button>` : ""}
+      ${isAdmin() && d.status === "pronta" ? `<button class="ghost small" data-act="attesa" data-id="${d.id}">Rimetti in attesa</button>` : ""}
+      ${d.status === "pronta" ? `<button class="ghost small" data-act="segnala" data-id="${d.id}">💬 Proponi una correzione</button>` : ""}
       ${puoModificare(d) ? `<button class="ghost small" data-act="edit" data-id="${d.id}">✏️ Modifica</button>` : ""}
     </div>`}
   </div>`;
@@ -754,16 +834,23 @@ function wireCards(main) {
   main.querySelectorAll("[data-act=fav]").forEach(b => {
     b.onclick = async (e) => { e.stopPropagation(); await toggleFav(b.dataset.id); };
   });
-  main.querySelectorAll("[data-act=status]").forEach(b => {
-    b.onclick = async () => {
-      const d = demoOf(b.dataset.id);
-      if (!isAdmin()) { toast("Solo un amministratore può pubblicare"); return; }
-      const status = d.status === "pronta" ? "bozza" : "pronta";
-      const { error } = await db.from("demos")
-        .update({ status, updated_at: new Date().toISOString() }).eq("id", d.id);
-      if (error) { toast("Errore nel salvataggio"); return; }
-      await refresh();
-    };
+  main.querySelectorAll("[data-act=pubblica]").forEach(b => {
+    b.onclick = () => pubblica(demoOf(b.dataset.id));
+  });
+  main.querySelectorAll("[data-act=rifiuta]").forEach(b => {
+    b.onclick = () => openVerdettoDialog(demoOf(b.dataset.id), "rifiutata");
+  });
+  main.querySelectorAll("[data-act=attesa]").forEach(b => {
+    b.onclick = () => openVerdettoDialog(demoOf(b.dataset.id), "bozza");
+  });
+  main.querySelectorAll("[data-act=segnala]").forEach(b => {
+    b.onclick = () => openSegnalaDialog(demoOf(b.dataset.id));
+  });
+  main.querySelectorAll("[data-sg-ok]").forEach(b => {
+    b.onclick = () => chiudiSegnalazione(b.dataset.sgOk, "sistemata");
+  });
+  main.querySelectorAll("[data-sg-no]").forEach(b => {
+    b.onclick = () => chiudiSegnalazione(b.dataset.sgNo, "scartata");
   });
   main.querySelectorAll("[data-act=run]").forEach(b => {
     b.onclick = () => openRunDialog(demoOf(b.dataset.id));
@@ -787,10 +874,95 @@ async function toggleFav(id) {
   await refresh();
 }
 
+// ── Approvazione delle proposte ─────────────────────────────
+// Chi propone una demo deve sempre sapere com'è finita: per questo un
+// verdetto negativo non è mai muto, la ragione viaggia con la demo.
+async function pubblica(d) {
+  if (!d) return;
+  if (!isAdmin()) { toast("Solo un amministratore può pubblicare"); return; }
+  const { error } = await db.from("demos").update({
+    status: "pronta",
+    review_note: null,
+    reviewed_by: me,
+    reviewed_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
+  }).eq("id", d.id);
+  if (error) { toast("Errore nel salvataggio"); return; }
+  toast("Pubblicata: ora la vedono tutti");
+  await refresh();
+}
+
+function openVerdettoDialog(d, status) {
+  if (!d) return;
+  if (!isAdmin()) { toast("Solo un amministratore può decidere"); return; }
+  const no = status === "rifiutata";
+  openDialog(no ? "Rifiuta la proposta" : "Rimetti in attesa", `
+    <p class="sub">${esc(d.name)}</p>
+    <div class="field"><label>Perché${no ? "" : ", cosa va sistemato"}</label>
+      <textarea name="nota" rows="3" placeholder="${no
+        ? "es. i passi sono troppi: tienine tre e togli il finale"
+        : "es. da rifare con iOS 26"}"></textarea></div>
+    <div class="sub" style="margin-top:8px">${esc(d.created_by || "Chi l'ha scritta")}
+      legge questa nota sulla scheda della demo.</div>`,
+    async (fd) => {
+      const nota = (fd.get("nota") || "").trim();
+      if (!nota) { toast("Scrivi due righe: senza motivo non si impara"); return false; }
+      const { error } = await db.from("demos").update({
+        status,
+        review_note: nota,
+        reviewed_by: me,
+        reviewed_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      }).eq("id", d.id);
+      if (error) { toast("Errore nel salvataggio"); return false; }
+      toast(no ? "Rifiutata, con il motivo" : "Rimessa in attesa");
+      openIds.add(d.id);
+      await refresh();
+    });
+}
+
+// ── Segnalazioni sulle demo pubblicate ──────────────────────
+// Una demo pubblicata la modifica solo un amministratore: chi lavora in
+// reparto però è il primo ad accorgersi se un passo non torna più.
+function openSegnalaDialog(d) {
+  if (!d) return;
+  openDialog("Proponi una correzione", `
+    <p class="sub">${esc(d.name)}</p>
+    <div class="field"><label>Cosa non torna</label>
+      <textarea name="text" rows="3"
+        placeholder="es. al passo 2 il menu ora si chiama diversamente"></textarea></div>
+    <div class="sub" style="margin-top:8px">Arriva agli amministratori,
+      che sistemano la demo per tutti.</div>`,
+    async (fd) => {
+      const text = (fd.get("text") || "").trim();
+      if (!text) { toast("Scrivi cosa va cambiato"); return false; }
+      const { error } = await db.from("demo_suggestions").insert({
+        demo_id: d.id, actor_name: me, text, status: "aperta",
+      });
+      if (error) { toast("Errore nell'invio"); return false; }
+      toast("Segnalazione inviata");
+      openIds.add(d.id);
+      await refresh();
+    });
+}
+
+async function chiudiSegnalazione(id, status) {
+  if (!isAdmin()) { toast("Solo un amministratore può chiuderla"); return; }
+  const { error } = await db.from("demo_suggestions").update({
+    status, closed_by: me, closed_at: new Date().toISOString(),
+  }).eq("id", id);
+  if (error) { toast("Errore nel salvataggio"); return; }
+  toast(status === "sistemata" ? "Segnata come sistemata" : "Scartata");
+  await refresh();
+}
+
 // ── Elenco ──────────────────────────────────────────────────
 function renderElenco(main) {
+  const coda = catFilter === "da-approvare" || catFilter === "segnalate";
   const list = inCatalog()
-    .filter(d => catFilter === "tutte" || d.category === catFilter)
+    .filter(d => catFilter === "tutte" || coda || d.category === catFilter)
+    .filter(d => catFilter !== "da-approvare" || d.status === "bozza")
+    .filter(d => catFilter !== "segnalate" || aperteDi(d.id).length)
     .filter(d => !query || (d.name + " " + (d.hook || "") + " " + (d.who || "") + " "
       + stepsOf(d).join(" ") + " " + benefitsOf(d).join(" "))
       .toLowerCase().includes(query.toLowerCase()));
@@ -805,20 +977,36 @@ function renderElenco(main) {
   }
 
   const attesa = daApprovare().length;
+  const aperte = segnalAperte().length;
+  const daFare = [
+    attesa ? `${attesa} propost${attesa === 1 ? "a" : "e"} da approvare` : null,
+    aperte ? (aperte === 1 ? "1 segnalazione aperta" : `${aperte} segnalazioni aperte`) : null,
+  ].filter(Boolean).join(" · ");
+
   main.innerHTML = `
     <div class="section-head"><h2>${inCatalog().length} demo in catalogo</h2>
       <button class="small" id="go-crea">+ Crea</button></div>
-    ${isAdmin() && attesa ? `<div class="avviso">${attesa} propost${attesa === 1 ? "a" : "e"}
-      in attesa di approvazione: le trovi con la targhetta “Da approvare”.</div>` : ""}
+    ${isAdmin() && daFare ? `<button type="button" class="avviso" id="vai-coda">${daFare}
+      — tocca per vederle</button>` : ""}
     <input type="search" id="q" placeholder="Cerca una demo, un cliente, un passo" value="${esc(query)}">
     <div class="chips filters" style="margin-top:12px">
       <button type="button" class="fchip" data-cat="tutte" aria-pressed="${catFilter === "tutte"}">Tutte</button>
+      ${isAdmin() && attesa ? `<button type="button" class="fchip" data-cat="da-approvare"
+        aria-pressed="${catFilter === "da-approvare"}">Da approvare · ${attesa}</button>` : ""}
+      ${isAdmin() && aperte ? `<button type="button" class="fchip" data-cat="segnalate"
+        aria-pressed="${catFilter === "segnalate"}">Segnalate · ${aperte}</button>` : ""}
       ${used.map(c => `<button type="button" class="fchip" data-cat="${esc(c)}" aria-pressed="${catFilter === c}">${esc(c)}</button>`).join("")}
     </div>
     ${groups.map(g => `<div class="cat-head">${esc(g.cat)}</div>${g.items.map(demoCard).join("")}`).join("")}
     ${sorted.length ? "" : `<div class="empty">Nessuna demo qui.<br>${query || catFilter !== "tutte" ? "Prova a togliere il filtro." : "Scrivi la prima con “+ Crea”."}</div>`}`;
 
   $("#go-crea").onclick = () => goTab("crea", { editing: null });
+  const coda_btn = $("#vai-coda");
+  if (coda_btn) coda_btn.onclick = () => {
+    catFilter = attesa ? "da-approvare" : "segnalate";
+    query = "";
+    render();
+  };
 
   const q = $("#q");
   q.oninput = () => {
@@ -998,9 +1186,13 @@ function renderCrea(main) {
       needs: (fd.get("needs") || "").trim() || null,
       owner: (fd.get("owner") || "").trim() || null,
       // solo un amministratore decide lo stato: agli altri resta la proposta
-      status: isAdmin() ? fd.get("status") : (d ? d.status : "bozza"),
+      // una proposta rifiutata, se la si corregge, torna in coda da sola
+      status: isAdmin() ? fd.get("status")
+        : (d ? (d.status === "rifiutata" ? "bozza" : d.status) : "bozza"),
       updated_at: new Date().toISOString(),
     };
+    const riproposta = !!d && d.status === "rifiutata" && row.status === "bozza";
+    if (riproposta) { row.review_note = null; row.reviewed_by = null; row.reviewed_at = null; }
     if (!row.name) { toast("Serve un nome"); return; }
     const btn = $("#save-demo");
     btn.disabled = true;
@@ -1008,7 +1200,7 @@ function renderCrea(main) {
       const { error } = await db.from("demos").update(row).eq("id", d.id);
       btn.disabled = false;
       if (error) { toast("Errore nel salvataggio"); return; }
-      toast("Salvata");
+      toast(riproposta ? "Riproposta all'amministratore" : "Salvata");
       openIds.add(d.id);
     } else {
       row.created_by = me;

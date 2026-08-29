@@ -51,6 +51,11 @@ create table if not exists public.demos (
 create index if not exists demos_lookup on public.demos (status, category, position);
 alter table public.demos add column if not exists created_by text;
 alter table public.demos add column if not exists benefits jsonb not null default '[]'::jsonb;
+-- Il verdetto dell'amministratore viaggia con la demo: chi l'ha proposta
+-- legge sulla scheda perché non è stata pubblicata e cosa deve cambiare.
+alter table public.demos add column if not exists review_note text;
+alter table public.demos add column if not exists reviewed_by text;
+alter table public.demos add column if not exists reviewed_at timestamptz;
 
 -- Ogni volta che una demo viene fatta davvero in reparto.
 -- In sola aggiunta: è il registro che dice quali demo vivono
@@ -76,6 +81,21 @@ create table if not exists public.demo_favorites (
 );
 create index if not exists demo_favorites_lookup on public.demo_favorites (person_name);
 
+-- Una demo pubblicata la modifica solo un amministratore, ma chi lavora in
+-- reparto è il primo ad accorgersi se un passo non torna più: qui finiscono
+-- le correzioni proposte, che un amministratore poi sistema o scarta.
+create table if not exists public.demo_suggestions (
+  id bigint generated always as identity primary key,
+  demo_id uuid not null references public.demos(id) on delete cascade,
+  text text not null,
+  actor_name text not null,
+  status text not null default 'aperta',
+  closed_by text,
+  closed_at timestamptz,
+  created_at timestamptz not null default now()
+);
+create index if not exists demo_suggestions_demo on public.demo_suggestions (demo_id);
+
 -- ------------------------------------------------------------
 -- Accesso: si legge e si scrive solo dopo il login
 -- ------------------------------------------------------------
@@ -83,12 +103,14 @@ alter table public.demo_people    enable row level security;
 alter table public.demos          enable row level security;
 alter table public.demo_runs      enable row level security;
 alter table public.demo_favorites enable row level security;
+alter table public.demo_suggestions enable row level security;
 
 drop policy if exists "people all"  on public.demo_people;
 drop policy if exists "demos all"   on public.demos;
 drop policy if exists "runs read"   on public.demo_runs;
 drop policy if exists "runs insert" on public.demo_runs;
 drop policy if exists "favs all"    on public.demo_favorites;
+drop policy if exists "suggestions all" on public.demo_suggestions;
 
 create policy "people all"  on public.demo_people
   for all to authenticated using (true) with check (true);
@@ -99,6 +121,8 @@ create policy "runs read"   on public.demo_runs
 create policy "runs insert" on public.demo_runs
   for insert to authenticated with check (true);
 create policy "favs all"    on public.demo_favorites
+  for all to authenticated using (true) with check (true);
+create policy "suggestions all" on public.demo_suggestions
   for all to authenticated using (true) with check (true);
 -- volutamente nessuna policy di update o delete: una demo fatta resta
 
@@ -123,6 +147,11 @@ end $$;
 do $$
 begin
   alter publication supabase_realtime add table public.demo_favorites;
+exception when duplicate_object then null;
+end $$;
+do $$
+begin
+  alter publication supabase_realtime add table public.demo_suggestions;
 exception when duplicate_object then null;
 end $$;
 
