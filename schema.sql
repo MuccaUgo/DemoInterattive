@@ -142,15 +142,16 @@ begin
    'Chi vende sui marketplace, genitori con i vestiti dei figli da rivendere',
    'lampo', 'facile',
    to_jsonb(array[
+     'Prima di iniziare: da un Mac in esposizione cerca «giacca vintage» e apri l''immagine a tutto schermo',
      'Chiedi al cliente di prendere il suo iPhone e tenere premuto il tasto Controllo fotocamera',
-     'Fagli inquadrare un oggetto che ha con sé — una giacca, una borsa — e scattare',
+     'Fagli inquadrare lo schermo e scattare — o un oggetto che ha con sé, se preferisce',
      'Digli di toccare Chiedi e di farsi scrivere la descrizione per l''annuncio'
    ]),
    to_jsonb(array[
      'Pubblichi l''annuncio in un minuto invece che in un quarto d''ora',
      'La descrizione è completa e vende meglio, anche quando non sai da dove iniziare'
    ]),
-   'iPhone del cliente con Apple Intelligence attiva e connessione',
+   'iPhone del cliente con Apple Intelligence attiva e un Mac in esposizione per l''immagine',
    'pronta', 1),
 
   ('Fotocamera con inversione colori', 'Accessibilità',
@@ -158,15 +159,16 @@ begin
    'Chi ha animali, chi fatica a distinguere i dettagli, chi lavora con oggetti scuri',
    'breve', 'facile',
    to_jsonb(array[
+     'Prima di iniziare: da un Mac in esposizione cerca «pelo scuro di cane» e apri l''immagine a tutto schermo',
      'Chiedi al cliente di aprire Impostazioni e andare in Accessibilità',
      'Guidalo in Schermo e dimensione testo e fagli attivare Inversione classica',
-     'Digli di aprire la fotocamera e inquadrare un tessuto scuro o il pelo di un animale'
+     'Digli di inquadrare lo schermo: sul negativo i dettagli chiari saltano fuori dal fondo scuro'
    ]),
    to_jsonb(array[
      'Trovi forasacchi, schegge e macchie che sul colore normale spariscono',
      'Lo schermo diventa più leggibile quando gli occhi sono stanchi'
    ]),
-   'Un iPhone qualsiasi. A fine demo ricordati di rimettere l''inversione su No',
+   'Un iPhone qualsiasi e un Mac in esposizione. A fine demo rimetti l''inversione su No',
    'pronta', 2),
 
   ('Sostituzione testo', 'Tastiera e testo',
@@ -190,9 +192,10 @@ begin
    'Chi ha già l''iPhone e sta guardando un Mac',
    'breve', 'media',
    to_jsonb(array[
+     'Prima di iniziare: sul Mac in esposizione apri Note e lascia una nota vuota aperta',
      'Chiedi al cliente di copiare un link o due righe di testo dal suo iPhone',
-     'Portalo davanti al Mac in esposizione e apri Note',
-     'Digli di incollare: quello che ha copiato sul telefono è già lì'
+     'Portalo davanti al Mac e digli di incollare',
+     'Quello che ha copiato sul telefono è già lì: nessun passaggio in mezzo'
    ]),
    to_jsonb(array[
      'Niente più messaggi mandati a te stesso per spostare due righe',
@@ -206,15 +209,16 @@ begin
    'Chi cucina, chi ha ospiti con esigenze alimentari diverse',
    'breve', 'facile',
    to_jsonb(array[
+     'Prima di iniziare: da un Mac o iPad in esposizione cerca «ricetta scritta a mano» e apri l''immagine a tutto schermo',
      'Chiedi al cliente di attivare Intelligenza visiva tenendo premuto il tasto Controllo fotocamera',
-     'Fagli inquadrare una ricetta scritta a mano, un menù o un''etichetta',
+     'Fagli inquadrare la ricetta sullo schermo — o un menù, o un''etichetta che ha con sé',
      'Digli di toccare Chiedi e domandare una variante: senza glutine, vegetariana, per sei persone'
    ]),
    to_jsonb(array[
      'La ricetta della nonna diventa una versione per chi ha intolleranze, in pochi secondi',
      'Funziona anche al ristorante o al supermercato, su qualsiasi etichetta'
    ]),
-   'iPhone con Apple Intelligence attiva. Tieni una ricetta stampata sotto il banco',
+   'iPhone con Apple Intelligence attiva e uno schermo in esposizione per mostrare la ricetta',
    'pronta', 5),
 
   ('Intelligenza visiva e sneakers', 'Apple Intelligence',
@@ -222,15 +226,16 @@ begin
    'Ragazzi, chi segue le mode, chi compra online',
    'lampo', 'facile',
    to_jsonb(array[
+     'Prima di iniziare: se il cliente non ha scarpe interessanti ai piedi, da un Mac in esposizione cerca «sneakers» e apri l''immagine a tutto schermo',
      'Chiedi al cliente di attivare Intelligenza visiva dal tasto Controllo fotocamera',
-     'Fagli inquadrare le sue scarpe — o le tue',
+     'Fagli inquadrare le scarpe — le sue o quelle sullo schermo',
      'Digli di toccare Cerca e guardare modello e prezzi che compaiono'
    ]),
    to_jsonb(array[
      'Scopri modello e prezzo di quello che vedi, senza chiedere a nessuno',
      'Confronti dove conviene comprarlo prima di decidere'
    ]),
-   'iPhone con Apple Intelligence attiva e connessione',
+   'iPhone con Apple Intelligence attiva, connessione, e un Mac in esposizione per l''immagine',
    'pronta', 6),
 
   ('Trovare i contatti dal tastierino', 'Telefono e contatti',
@@ -270,15 +275,16 @@ begin
    'Chi fa la spesa online, chi sta attento a cosa mangia',
    'lampo', 'facile',
    to_jsonb(array[
-     'Chiedi al cliente di fare uno screenshot di un prodotto, anche dal sito che ha già aperto',
-     'Sullo screenshot, fagli toccare Chiedi',
+     'Prima di iniziare: da un Mac in esposizione cerca «confezione di patatine» e apri l''immagine a tutto schermo',
+     'Chiedi al cliente di fotografare lo schermo col suo iPhone e di aprire la foto',
+     'Fagli fare uno screenshot e toccare Chiedi',
      'Digli di domandare quali sono le alternative più salutari'
    ]),
    to_jsonb(array[
      'Ricevi una risposta sul prodotto che hai davanti, non una ricerca generica',
      'Vale su qualsiasi schermata: prodotti, menù, etichette'
    ]),
-   'iPhone con Apple Intelligence attiva e connessione',
+   'iPhone con Apple Intelligence attiva, connessione, e un Mac in esposizione per l''immagine',
    'pronta', 9),
 
   ('Intelligenza visiva e libri', 'Apple Intelligence',
@@ -286,15 +292,16 @@ begin
    'Chi legge, chi cerca un regalo',
    'lampo', 'facile',
    to_jsonb(array[
+     'Prima di iniziare: da un Mac in esposizione cerca la copertina di un libro conosciuto e aprila a tutto schermo',
      'Chiedi al cliente di attivare Intelligenza visiva dal tasto Controllo fotocamera',
-     'Fagli scattare una foto alla copertina di un libro',
+     'Fagli scattare una foto alla copertina sullo schermo',
      'Digli di chiedere altri titoli con lo stesso stile'
    ]),
    to_jsonb(array[
      'Trovi la prossima lettura in pochi secondi, partendo da una che ti è piaciuta',
      'Lo stesso gesto vale per film, dischi e videogiochi'
    ]),
-   'iPhone con Apple Intelligence attiva. Tieni un libro sul banco',
+   'iPhone con Apple Intelligence attiva, connessione, e un Mac in esposizione per la copertina',
    'pronta', 10),
 
   ('Cartelle personalizzate', 'Mac',
@@ -302,15 +309,16 @@ begin
    'Studenti, chi lavora con tanti file, chi condivide il Mac in famiglia',
    'breve', 'facile',
    to_jsonb(array[
-     'Chiedi al cliente di aprire una cartella sul Mac in esposizione',
-     'Guidalo su Personalizza cartella',
-     'Fagli scegliere colore e icona, poi chiudere: la cartella si riconosce al volo'
+     'Prima di iniziare: sul Mac in esposizione crea una cartella nuova sulla scrivania',
+     'Chiedi al cliente di aprirla e di scegliere Personalizza cartella',
+     'Fagli scegliere colore e icona',
+     'Chiudi: la cartella ora si riconosce senza leggere il nome'
    ]),
    to_jsonb(array[
      'Riconosci la cartella giusta senza leggere il nome',
      'La scrivania resta ordinata anche quando i file diventano tanti'
    ]),
-   'Un Mac in esposizione con qualche cartella sulla scrivania',
+   'Un Mac in esposizione. A fine demo butta la cartella di prova nel cestino',
    'pronta', 11),
 
   ('Strumenti di scrittura e l''inglese', 'Apple Intelligence',
@@ -334,14 +342,15 @@ begin
    'Chi arreda casa, chi salva foto di ispirazione, chi compra online',
    'lampo', 'facile',
    to_jsonb(array[
-     'Chiedi al cliente di aprire una foto con un oggetto che gli piace e fare uno screenshot',
-     'Fagli evidenziare l''oggetto con il dito',
+     'Prima di iniziare: da un Mac in esposizione cerca «salotto con poltrona blu» e apri l''immagine a tutto schermo',
+     'Chiedi al cliente di fotografare lo schermo col suo iPhone e di aprire la foto',
+     'Fagli fare uno screenshot ed evidenziare la poltrona con il dito',
      'Digli di scorrere verso l''alto per vedere dove si compra e quanto costa'
    ]),
    to_jsonb(array[
      'Trovi l''oggetto esatto che hai visto, con il prezzo, senza descriverlo a parole',
      'Confronti più negozi in una schermata sola'
    ]),
-   'iPhone con Apple Intelligence attiva e connessione',
+   'iPhone con Apple Intelligence attiva, connessione, e un Mac in esposizione per l''immagine',
    'pronta', 13);
 end $$;
