@@ -30,9 +30,12 @@ alter table public.demo_people add column if not exists admin boolean not null d
 create table if not exists public.demos (
   id uuid primary key default gen_random_uuid(),
   name text not null,
-  category text not null default 'Altro',    -- l'argomento: Apple Intelligence · Fotocamera e Foto ·
-                                             -- Accessibilità · Tastiera e testo · Continuity ·
-                                             -- Telefono e contatti · Organizzazione · Mac · iPad · Altro
+  category text not null default 'Altro',    -- i tag uniti da " · ", copia leggibile di tags
+  tags jsonb not null default '[]'::jsonb,   -- i tag, in ordine: il primo fa da titolo nell'elenco.
+                                             -- iPhone · iPad · Mac · Apple Watch · AirPods ·
+                                             -- Apple Intelligence · Accessibilità · Fotocamera e Foto ·
+                                             -- Tastiera e testo · Continuity · Telefono e contatti ·
+                                             -- Organizzazione · Salute e movimento · Altro
   hook text,                                 -- la frase con cui si apre
   who text,                                  -- a quale cliente sta bene
   duration text not null default 'breve',    -- lampo · breve · completa
@@ -51,6 +54,7 @@ create table if not exists public.demos (
 create index if not exists demos_lookup on public.demos (status, category, position);
 alter table public.demos add column if not exists created_by text;
 alter table public.demos add column if not exists benefits jsonb not null default '[]'::jsonb;
+alter table public.demos add column if not exists tags jsonb not null default '[]'::jsonb;
 -- Il verdetto dell'amministratore viaggia con la demo: chi l'ha proposta
 -- legge sulla scheda perché non è stata pubblicata e cosa deve cambiare.
 alter table public.demos add column if not exists review_note text;
@@ -386,3 +390,13 @@ begin
    'iPhone con Apple Intelligence attiva, connessione, e un Mac in esposizione per l''immagine',
    'pronta', 13);
 end $$;
+
+-- I tag delle schede appena seminate: category ne contiene uno solo, qui
+-- diventa la lista che l'app si aspetta. Vale anche per le demo vecchie,
+-- dove i tag erano uniti da " · " (vedi tags.sql).
+update public.demos
+   set tags = (select coalesce(jsonb_agg(trim(both from t) order by i), '[]'::jsonb)
+                 from unnest(string_to_array(category, ' · ')) with ordinality as u(t, i)
+                where trim(both from t) <> '')
+ where tags = '[]'::jsonb
+   and coalesce(category, '') <> '';

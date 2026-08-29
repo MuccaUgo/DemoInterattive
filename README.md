@@ -9,8 +9,8 @@ Sito a sé, database a sé. Sta accanto a **Store Tasks**, non dentro.
 
 ## Le quattro sezioni
 
-- **Elenco** — le demo raggruppate per argomento, con ricerca (nome, frase di
-  apertura, cliente, passi, vantaggi) e filtri. Ogni scheda si apre sui passaggi
+- **Elenco** — le demo raggruppate per tag, con ricerca (nome, frase di
+  apertura, cliente, passi, vantaggi, tag) e filtri. Ogni scheda si apre sui passaggi
   numerati, scritti come si dicono davvero: *“Chiedi al cliente di tenere premuto
   il tasto Controllo fotocamera”*. In fondo, **cosa ci guadagna il cliente**.
 - **Preferite** — la stella accanto al nome. Personali, legate al profilo: le
@@ -27,6 +27,23 @@ di commento. È in sola aggiunta: una demo fatta non si cancella.
 In alto, accanto al tuo nome, il tasto **↻**: ricarica l'app e riprende dal
 database le proposte e le segnalazioni arrivate nel frattempo. Se stai
 scrivendo una demo non ricarica niente, aggiorna solo i dati.
+
+## I tag
+
+Una demo parla di più cose insieme: *Apple Intelligence* **e** *iPhone*,
+*Accessibilità* **e** *Mac*. Per questo i tag sono più d'uno e si scelgono
+toccandoli, nel modulo di creazione:
+
+> iPhone · iPad · Mac · Apple Watch · AirPods · Apple Intelligence ·
+> Accessibilità · Fotocamera e Foto · Tastiera e testo · Continuity ·
+> Telefono e contatti · Organizzazione · Salute e movimento · Altro
+
+Restano nell'ordine in cui li tocchi, e **il primo** è quello sotto cui la demo
+finisce nell'elenco — il modulo lo dice mentre scegli. I filtri in cima
+all'elenco e la ricerca li guardano tutti, non solo il primo.
+
+Sulla scheda compaiono gli altri tag, quelli che il titolo del gruppo non dice
+già.
 
 ## Come si entra
 
@@ -99,6 +116,11 @@ ci sono, `demo_suggestions` e le colonne del verdetto comprese. Per i ruoli serv
 primo amministratore. Il file `schema.sql` resta qui come sorgente: serve per rifare il
 database da zero o per un secondo ambiente. Si può rieseguire senza danni —
 se il catalogo non è vuoto, non tocca niente.
+
+I tag stanno in `demos.tags`. Finché quella colonna non c'è, l'app li tiene
+tutti in `demos.category`, uniti da `·`: funziona uguale prima e dopo. Per
+aggiungere la colonna e rimettere a posto le demo già scritte, esegui
+`tags.sql` — una volta sola, si può rieseguire senza danni.
 
 Tabelle: `demo_people` (chi si è registrato), `demos` (le schede),
 `demo_runs` (le demo fatte, in sola aggiunta), `demo_favorites` (le preferite),
