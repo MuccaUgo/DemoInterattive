@@ -2,7 +2,8 @@
   <!-- Demo Interattive — il telefono che il cliente tocca, e una frase che
        arriva da fuori: la bolla è intera, la coda esce dalla cornice, come nei
        fumetti quando chi parla resta fuori dalla vignetta.
-       Il filo di sfondo attorno alla bolla la stacca dal telefono. -->
+       Il filo di sfondo attorno alla bolla la stacca dal telefono; la bolla
+       sta alta, così copre solo lo spigolo del dispositivo. -->
   <defs>
     <linearGradient id="sfondo" x1="0" y1="0" x2="1" y2="1">
       <stop offset="0" stop-color="#a78bfa"/>
@@ -17,7 +18,7 @@
     <circle cx="426" cy="533" r="46" fill="url(#sfondo)"/>
     <circle cx="426" cy="533" r="101" fill="none" stroke="url(#sfondo)" stroke-width="25" opacity=".55"/>
 
-    <path d="M556 168h270a60 60 0 0 1 60 60v24l294 44-294 100v24a60 60 0 0 1-60 60H556a60 60 0 0 1-60-60V228a60 60 0 0 1 60-60z"
+    <path d="M556 108h270a60 60 0 0 1 60 60v24l294 44-294 100v24a60 60 0 0 1-60 60H556a60 60 0 0 1-60-60V168a60 60 0 0 1 60-60z"
       fill="#ffffff" stroke="url(#sfondo)" stroke-width="30"/>
   </g>
 </svg>
