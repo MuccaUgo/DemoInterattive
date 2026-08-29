@@ -20,8 +20,10 @@ create table if not exists public.demo_people (
   name text not null unique,
   salt text not null default '',        -- vuoti finché la persona non
   code_hash text not null default '',   -- sceglie il codice al primo accesso
+  admin boolean not null default false, -- approva le proposte e tocca le pubblicate
   created_at timestamptz not null default now()
 );
+alter table public.demo_people add column if not exists admin boolean not null default false;
 
 -- Una demo = una scheda del catalogo: cosa mostrare, a chi, e come.
 -- I passi stanno in jsonb perché si scrivono e si leggono sempre insieme.
@@ -39,7 +41,8 @@ create table if not exists public.demos (
   needs text,                                -- cosa serve prima di iniziare
   benefits jsonb not null default '[]'::jsonb, -- i vantaggi con cui si chiude
   owner text,                                -- chi tiene aggiornata la scheda
-  status text not null default 'bozza',      -- bozza · pronta · ritirata
+  status text not null default 'bozza',      -- bozza (proposta, in attesa) ·
+                                             -- pronta (pubblicata) · ritirata
   created_by text,                           -- chi l'ha scritta
   position int not null default 0,
   created_at timestamptz not null default now(),
