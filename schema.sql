@@ -206,15 +206,16 @@ begin
    'Chi cucina, chi ha ospiti con esigenze alimentari diverse',
    'breve', 'facile',
    to_jsonb(array[
+     'Prima di iniziare: da un Mac o iPad in esposizione cerca «ricetta scritta a mano» e apri l''immagine a tutto schermo',
      'Chiedi al cliente di attivare Intelligenza visiva tenendo premuto il tasto Controllo fotocamera',
-     'Fagli inquadrare una ricetta scritta a mano, un menù o un''etichetta',
+     'Fagli inquadrare la ricetta sullo schermo — o un menù, o un''etichetta che ha con sé',
      'Digli di toccare Chiedi e domandare una variante: senza glutine, vegetariana, per sei persone'
    ]),
    to_jsonb(array[
      'La ricetta della nonna diventa una versione per chi ha intolleranze, in pochi secondi',
      'Funziona anche al ristorante o al supermercato, su qualsiasi etichetta'
    ]),
-   'iPhone con Apple Intelligence attiva. Tieni una ricetta stampata sotto il banco',
+   'iPhone con Apple Intelligence attiva e uno schermo in esposizione per mostrare la ricetta',
    'pronta', 5),
 
   ('Intelligenza visiva e sneakers', 'Apple Intelligence',
