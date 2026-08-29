@@ -1,7 +1,7 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024">
   <!-- Demo Interattive — il telefono che il cliente tocca e una frase che gli
-       arriva: la bolla sta in alto, la coda parte larga dal suo fondo e scende
-       di sbieco verso il basso a destra.
+       arriva: la bolla sta in alto, la coda parte larga dal centro del suo
+       fondo e scende quasi a piombo verso il telefono.
        Il filo di sfondo attorno alla bolla la stacca dal dispositivo, così a
        icona piccola le due forme non si impastano. -->
   <defs>
@@ -19,7 +19,7 @@
     <circle cx="426" cy="533" r="101" fill="none" stroke="url(#sfondo)" stroke-width="25" opacity=".55"/>
 
     <path d="M556 108 H826 A60 60 0 0 1 886 168 V320 A60 60 0 0 1 826 380
-             H820 L902 548 L660 380 H556 A60 60 0 0 1 496 320 V168 A60 60 0 0 1 556 108 Z"
+             H760 L800 560 L620 380 H556 A60 60 0 0 1 496 320 V168 A60 60 0 0 1 556 108 Z"
       fill="#ffffff" stroke="url(#sfondo)" stroke-width="30"/>
   </g>
 </svg>
