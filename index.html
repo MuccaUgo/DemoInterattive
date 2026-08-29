@@ -181,14 +181,21 @@
   /* ── Catalogo ── */
   .chips { display: flex; flex-wrap: wrap; gap: 6px; }
   .filters { margin-bottom: 12px; overflow-x: auto; flex-wrap: nowrap; padding-bottom: 2px; }
+  .tagpick .fchip { padding: 6px 11px; font-size: .8rem; }
+  .tag-nota { margin-top: 7px; }
+  .tag-nota b { color: var(--accent); }
   .fchip {
     border: 1px solid var(--line); background: var(--card); color: var(--muted);
     border-radius: 999px; padding: 7px 14px; font-size: .82rem; font-weight: 600;
     cursor: pointer; font-family: inherit; white-space: nowrap;
   }
   .fchip[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: #fff; }
-  .d-summary { cursor: pointer; align-items: flex-start; gap: 10px; }
-  .d-title { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .d-summary { cursor: pointer; align-items: flex-start; gap: 10px; flex-wrap: nowrap; }
+  .d-summary > div { flex: 1; min-width: 0; }
+  .d-summary > .badge { flex: none; margin-top: 2px; }
+  .d-title { display: flex; align-items: baseline; gap: 8px; }
+  .d-title h3 { min-width: 0; overflow-wrap: anywhere; }
+  .d-title .star { flex: none; }
   .star {
     background: none; border: none; padding: 2px 6px; margin: -2px -4px;
     font-size: 1.15rem; line-height: 1; cursor: pointer; color: var(--muted);
@@ -395,8 +402,14 @@ const RICHIEDI_PASSWORD = false;
 const db = createClient(SUPABASE_URL, SUPABASE_KEY);
 
 // ── Stato ───────────────────────────────────────────────────
-const CATS = ["Apple Intelligence", "Fotocamera e Foto", "Accessibilità", "Tastiera e testo",
-  "Continuity", "Telefono e contatti", "Organizzazione", "Mac", "iPad", "Altro"];
+// I tag di una demo sono più d'uno: prima i prodotti, poi gli argomenti.
+// Il primo scelto è quello sotto cui la demo finisce nell'elenco.
+const TAGS = ["iPhone", "iPad", "Mac", "Apple Watch", "AirPods",
+  "Apple Intelligence", "Accessibilità", "Fotocamera e Foto", "Tastiera e testo",
+  "Continuity", "Telefono e contatti", "Organizzazione", "Salute e movimento", "Altro"];
+// Finché la colonna tags non c'è, i tag stanno tutti in category, separati
+// così: l'app funziona uguale prima e dopo la migrazione (vedi tags.sql).
+const TAG_SEP = " · ";
 const DURATIONS = ["lampo", "breve", "completa"];
 const DUR_HINT = { lampo: "30 secondi", breve: "2 minuti", completa: "5 minuti" };
 const DUR_TEMPO = { lampo: "30 s", breve: "2 min", completa: "5 min" };
@@ -414,6 +427,7 @@ let openIds = new Set();     // schede aperte nell'elenco
 let catFilter = "tutte";
 let query = "";
 let editingId = null;        // la demo aperta nella scheda "Crea"
+let hasTags = false;         // la colonna tags esiste già sul database?
 let formMounted = null;      // evita che un aggiornamento altrui cancelli quello che stai scrivendo
 
 const $ = (s) => document.querySelector(s);
@@ -625,6 +639,7 @@ async function loadAll() {
   ]);
   hasSchema = !d.error && !f.error && !p.error;
   demos = d.data || [];
+  hasTags = demos.some(x => "tags" in x);
   runs = r.data || [];
   favs = f.data || [];
   persons = p.data || [];
@@ -652,6 +667,9 @@ const lastRun = (id) => { const a = runsOf(id); return a.length ? a[a.length - 1
 const recentRuns = (id, days = 30) => runsOf(id).filter(r => r.created_at >= daysAgo(days)).length;
 const demoOf = (id) => demos.find(d => d.id === id) || null;
 const stepsOf = (d) => Array.isArray(d?.steps) ? d.steps : [];
+const tagsOf = (d) => Array.isArray(d?.tags) && d.tags.length ? d.tags
+  : (d?.category ? d.category.split(TAG_SEP).map(t => t.trim()).filter(Boolean) : []);
+const tagPrinc = (d) => tagsOf(d)[0] || "Altro";
 const benefitsOf = (d) => Array.isArray(d?.benefits) ? d.benefits : [];
 // Le pubblicate le vedono tutti; le proposte solo chi le ha scritte e gli
 // amministratori; le ritirate restano agli amministratori.
@@ -763,7 +781,7 @@ function demoCard(d, conCategoria = false) {
 
   return `<div class="card" data-id="${d.id}">
     <div class="row spread d-summary" data-toggle="${d.id}">
-      <div style="min-width:0">
+      <div>
         <div class="d-title">
           <h3>${esc(d.name)}</h3>
           <button class="star ${fav ? "on" : ""}" data-act="fav" data-id="${d.id}"
@@ -775,7 +793,8 @@ function demoCard(d, conCategoria = false) {
       <span class="badge ${STATO_CLASSE[d.status] || ""}">${STATO[d.status] || d.status}</span>
     </div>
     <div class="dmeta">
-      ${conCategoria ? `<span>${esc(d.category)}</span>` : ""}
+      ${(conCategoria ? tagsOf(d) : tagsOf(d).slice(1))
+        .map(t => `<span>${esc(t)}</span>`).join("")}
       <span class="dur">${DUR_TEMPO[d.duration] || esc(d.duration)}</span>
       <span class="lev-${esc(d.level)}">${esc(d.level)}</span>
       ${favCount(d.id) ? `<span class="fav">★ ${favCount(d.id)}</span>` : ""}
@@ -960,20 +979,20 @@ async function chiudiSegnalazione(id, status) {
 function renderElenco(main) {
   const coda = catFilter === "da-approvare" || catFilter === "segnalate";
   const list = inCatalog()
-    .filter(d => catFilter === "tutte" || coda || d.category === catFilter)
+    .filter(d => catFilter === "tutte" || coda || tagsOf(d).includes(catFilter))
     .filter(d => catFilter !== "da-approvare" || d.status === "bozza")
     .filter(d => catFilter !== "segnalate" || aperteDi(d.id).length)
     .filter(d => !query || (d.name + " " + (d.hook || "") + " " + (d.who || "") + " "
-      + stepsOf(d).join(" ") + " " + benefitsOf(d).join(" "))
+      + stepsOf(d).join(" ") + " " + benefitsOf(d).join(" ") + " " + tagsOf(d).join(" "))
       .toLowerCase().includes(query.toLowerCase()));
-  const used = CATS.filter(c => inCatalog().some(d => d.category === c));
+  const used = TAGS.filter(t => inCatalog().some(d => tagsOf(d).includes(t)));
   const sorted = catalogSorted(list);
 
   // Raggruppate per prodotto: sul reparto si cerca così, non per nome.
   const groups = [];
   for (const d of sorted) {
-    const g = groups.find(x => x.cat === d.category);
-    if (g) g.items.push(d); else groups.push({ cat: d.category, items: [d] });
+    const g = groups.find(x => x.cat === tagPrinc(d));
+    if (g) g.items.push(d); else groups.push({ cat: tagPrinc(d), items: [d] });
   }
 
   const attesa = daApprovare().length;
@@ -997,7 +1016,7 @@ function renderElenco(main) {
         aria-pressed="${catFilter === "segnalate"}">Segnalate · ${aperte}</button>` : ""}
       ${used.map(c => `<button type="button" class="fchip" data-cat="${esc(c)}" aria-pressed="${catFilter === c}">${esc(c)}</button>`).join("")}
     </div>
-    ${groups.map(g => `<div class="cat-head">${esc(g.cat)}</div>${g.items.map(demoCard).join("")}`).join("")}
+    ${groups.map(g => `<div class="cat-head">${esc(g.cat)}</div>${g.items.map(d => demoCard(d)).join("")}`).join("")}
     ${sorted.length ? "" : `<div class="empty">Nessuna demo qui.<br>${query || catFilter !== "tutte" ? "Prova a togliere il filtro." : "Scrivi la prima con “+ Crea”."}</div>`}`;
 
   $("#go-crea").onclick = () => goTab("crea", { editing: null });
@@ -1077,8 +1096,14 @@ function renderCrea(main) {
       <div class="card">
         <div class="field" style="margin-top:0"><label>Nome della demo *</label>
           <input type="text" name="name" value="${esc(d?.name || "")}" placeholder="es. Ripulisci in Foto" required></div>
-        <div class="field"><label>Prodotto</label>
-          <select name="category">${opt("category", CATS, d?.category || "iPhone")}</select></div>
+        <div class="field"><label>Tag</label>
+          <div class="chips tagpick" id="tagpick">
+            ${TAGS.map(t => `<button type="button" class="fchip" data-tag="${esc(t)}"
+              aria-pressed="false">${esc(t)}</button>`).join("")}
+          </div>
+          <input type="hidden" name="tags" value="${esc(JSON.stringify(tagsOf(d)))}">
+          <div class="sub tag-nota">Quanti ne servono. Nell'elenco la demo finisce
+            sotto il primo che scegli: <b id="tag-princ">—</b></div></div>
         <div class="row" style="gap:8px">
           <div class="field" style="flex:1;min-width:130px"><label>Quanto dura</label>
             <select name="duration">${opt("duration", DURATIONS, d?.duration || "breve")}</select></div>
@@ -1157,6 +1182,25 @@ function renderCrea(main) {
     wireList(box);
     box.querySelector(".step-ed:last-child input").focus();
   };
+  // i tag si accendono e si spengono, e restano nell'ordine in cui li tocchi:
+  // il primo è quello che fa da titolo di gruppo nell'elenco
+  const tagBox = $("#tagpick"), tagHidden = form.querySelector("[name=tags]");
+  const tagScelti = () => { try { return JSON.parse(tagHidden.value) || []; } catch { return []; } };
+  const disegnaTag = () => {
+    const cur = tagScelti();
+    tagBox.querySelectorAll("[data-tag]").forEach(b =>
+      b.setAttribute("aria-pressed", cur.includes(b.dataset.tag)));
+    $("#tag-princ").textContent = cur[0] || "—";
+  };
+  tagBox.querySelectorAll("[data-tag]").forEach(b => {
+    b.onclick = () => {
+      const cur = tagScelti(), t = b.dataset.tag;
+      tagHidden.value = JSON.stringify(cur.includes(t) ? cur.filter(x => x !== t) : [...cur, t]);
+      disegnaTag();
+    };
+  });
+  disegnaTag();
+
   const stepsEd = $("#steps-ed"), bensEd = $("#bens-ed");
   wireList(stepsEd); wireList(bensEd);
   $("#add-step").onclick = () => addTo(stepsEd, stepRow());
@@ -1174,9 +1218,11 @@ function renderCrea(main) {
   form.onsubmit = async (e) => {
     e.preventDefault();
     const fd = new FormData(form);
+    const tags = tagScelti().filter(t => TAGS.includes(t));
     const row = {
       name: (fd.get("name") || "").trim(),
-      category: fd.get("category"),
+      // finché la colonna tags non c'è, i tag viaggiano dentro category
+      category: tags.join(TAG_SEP),
       hook: (fd.get("hook") || "").trim() || null,
       who: (fd.get("who") || "").trim() || null,
       duration: fd.get("duration"),
@@ -1194,6 +1240,8 @@ function renderCrea(main) {
     const riproposta = !!d && d.status === "rifiutata" && row.status === "bozza";
     if (riproposta) { row.review_note = null; row.reviewed_by = null; row.reviewed_at = null; }
     if (!row.name) { toast("Serve un nome"); return; }
+    if (!tags.length) { toast("Scegli almeno un tag"); return; }
+    if (hasTags) row.tags = tags;
     const btn = $("#save-demo");
     btn.disabled = true;
     if (d) {
@@ -1302,7 +1350,7 @@ function renderProfilo(main) {
 
     ${tue.length ? `<div class="section-head" style="margin-top:22px"><h2>Quelle che fai più spesso</h2></div>
       ${tue.map(({ d, n }) => `<div class="rank">
-        <span class="rank-name">${esc(d.name)}<em>${esc(d.category)}</em></span>
+        <span class="rank-name">${esc(d.name)}<em>${esc(tagPrinc(d))}</em></span>
         <span class="bar"><i class="o" style="width:${(n / topN) * 100}%"></i></span>
         <span class="rank-num">${n}</span>
       </div>`).join("")}` : ""}
