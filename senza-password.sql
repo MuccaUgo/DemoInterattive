@@ -16,6 +16,7 @@ drop policy if exists "demos anon"  on public.demos;
 drop policy if exists "runs anon read"   on public.demo_runs;
 drop policy if exists "runs anon insert" on public.demo_runs;
 drop policy if exists "favs anon"   on public.demo_favorites;
+drop policy if exists "suggestions anon" on public.demo_suggestions;
 
 create policy "people anon" on public.demo_people
   for all to anon using (true) with check (true);
@@ -26,6 +27,8 @@ create policy "runs anon read"   on public.demo_runs
 create policy "runs anon insert" on public.demo_runs
   for insert to anon with check (true);
 create policy "favs anon"   on public.demo_favorites
+  for all to anon using (true) with check (true);
+create policy "suggestions anon" on public.demo_suggestions
   for all to anon using (true) with check (true);
 -- anche qui nessun update o delete sul registro: una demo fatta resta
 
@@ -38,3 +41,4 @@ create policy "favs anon"   on public.demo_favorites
 -- drop policy if exists "runs anon read"   on public.demo_runs;
 -- drop policy if exists "runs anon insert" on public.demo_runs;
 -- drop policy if exists "favs anon"        on public.demo_favorites;
+-- drop policy if exists "suggestions anon" on public.demo_suggestions;

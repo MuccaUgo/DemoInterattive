@@ -24,6 +24,10 @@ Sito a sé, database a sé. Sta accanto a **Store Tasks**, non dentro.
 Su ogni scheda c'è **“L'ho fatta”**: com'è andata (wow · ok · fiacca) e una riga
 di commento. È in sola aggiunta: una demo fatta non si cancella.
 
+In alto, accanto al tuo nome, il tasto **↻**: ricarica l'app e riprende dal
+database le proposte e le segnalazioni arrivate nel frattempo. Se stai
+scrivendo una demo non ricarica niente, aggiorna solo i dati.
+
 ## Come si entra
 
 Si apre il sito e si sceglie il proprio nome, poi il **codice di 6 cifre**.
@@ -41,6 +45,26 @@ restano dietro il loro login.
 Chi scrive una demo manda una **proposta**: la vede solo lui, marcata *Da
 approvare*, finché un amministratore non la pubblica. Da lì in poi la demo
 pubblicata la modifica solo un amministratore.
+
+Il giro di una proposta si chiude sempre, in un modo o nell'altro:
+
+- **Approva e pubblica** — la demo entra nel catalogo di tutti, con scritto chi
+  l'ha proposta e chi l'ha pubblicata.
+- **Rifiuta** — serve un motivo, non si rifiuta in silenzio. Chi l'ha scritta
+  trova la demo marcata *Rifiutata* con la nota dell'amministratore sulla
+  scheda: la corregge, la salva, e torna in coda da sé (la vecchia nota sparisce).
+- **Rimetti in attesa** — vale anche su una demo già pubblicata, quando ha
+  smesso di funzionare: torna *Da approvare* con scritto cosa va sistemato.
+
+L'amministratore trova quello che lo aspetta in cima all'**Elenco**: un avviso
+con i numeri e i filtri *Da approvare* e *Segnalate*.
+
+### Segnalazioni
+
+Una demo pubblicata la modifica solo un amministratore, ma chi lavora in reparto
+è il primo ad accorgersi se un passo non torna più. Sulle demo pubblicate c'è
+**“Proponi una correzione”**: due righe, firmate, che restano sulla scheda
+finché un amministratore non le segna *Sistemata* o *Scarta*.
 
 Un amministratore, dal **Profilo → Chi usa l'app**, aggiunge persone, azzera
 codici, e passa il ruolo ad altri (*Gestisci → Rendi amministratore*). L'ultimo
@@ -71,13 +95,14 @@ proteggere segreti: la porta di casa resta la password del team.
 
 ### 1. Database
 Già fatto sul progetto **StoreTool**: le tabelle e le tredici demo di partenza
-ci sono. Per i ruoli serve anche `admin.sql`, che aggiunge la colonna e crea il
+ci sono, `demo_suggestions` e le colonne del verdetto comprese. Per i ruoli serve anche `admin.sql`, che aggiunge la colonna e crea il
 primo amministratore. Il file `schema.sql` resta qui come sorgente: serve per rifare il
 database da zero o per un secondo ambiente. Si può rieseguire senza danni —
 se il catalogo non è vuoto, non tocca niente.
 
 Tabelle: `demo_people` (chi si è registrato), `demos` (le schede),
-`demo_runs` (le demo fatte, in sola aggiunta), `demo_favorites` (le preferite).
+`demo_runs` (le demo fatte, in sola aggiunta), `demo_favorites` (le preferite),
+`demo_suggestions` (le correzioni proposte).
 
 ### 2. Pubblicazione su GitHub Pages
 Repository → **Settings → Pages** → Source: `main`, cartella `/ (root)`.
