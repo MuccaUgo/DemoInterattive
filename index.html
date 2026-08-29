@@ -358,10 +358,6 @@ const SHARED_EMAIL = "marcocasati+storetasks@gmail.com"; // utente condiviso in 
 // indietro: true qui, e in fondo a quel file ci sono i drop policy.
 const RICHIEDI_PASSWORD = false;
 
-// Ponte finché admin.sql non gira: questi nomi sono amministratori anche
-// senza la colonna "admin" sul database. Quando la colonna c'è, il ruolo
-// lo decide lei e questa lista si può svuotare.
-const ADMIN_PER_NOME = ["Admin", "Marco"];
 
 const db = createClient(SUPABASE_URL, SUPABASE_KEY);
 
@@ -616,7 +612,8 @@ const myFavs = () => favs.filter(f => f.person_name === me);
 const favCount = (id) => favs.filter(f => f.demo_id === id).length;
 const myRuns = () => runs.filter(r => r.actor_name === me);
 const meStesso = () => persons.find(p => p.id === meId) || null;
-const adminDi = (p) => !!p && (p.admin === true || ADMIN_PER_NOME.includes(p.name));
+// il ruolo sta nel database, sulla colonna admin di demo_people
+const adminDi = (p) => p?.admin === true;
 const isAdmin = () => adminDi(meStesso());
 const nAdmin = () => persons.filter(adminDi).length;
 
@@ -1273,13 +1270,9 @@ function renderProfilo(main) {
             if (!confirm(admin ? `Rendere ${p.name} amministratore?`
                                : `Togliere il ruolo di amministratore a ${p.name}?`)) return;
             const { error } = await db.from("demo_people").update({ admin }).eq("id", p.id);
-            // finché admin.sql non gira la colonna non esiste e il database rifiuta
-            if (error) { toast("Il ruolo si passa solo dopo admin.sql sul database"); return; }
+            if (error) { toast("Errore nel salvataggio"); return; }
             $("#dlg").close();
-            // un nome nella lista del codice resta amministratore comunque
-            toast(!admin && ADMIN_PER_NOME.includes(p.name)
-              ? "Resta amministratore: il nome è nella lista del codice"
-              : admin ? "Ora è amministratore" : "Ruolo tolto");
+            toast(admin ? "Ora è amministratore" : "Ruolo tolto");
             await refresh();
           };
           const reset = form.querySelector("#reset-code");
