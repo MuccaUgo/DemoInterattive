@@ -36,9 +36,25 @@ conosca l'indirizzo del sito** legge e modifica catalogo, nomi e registro. Il
 codice personale dice chi sei, non protegge i dati. Le tabelle di Store Tasks
 restano dietro il loro login.
 
-Le persone si gestiscono dal **Profilo**: chi aggiungi lì trova già il suo nome
-all'ingresso e sceglie il codice da sé al primo accesso. Chi lo dimentica,
+### Amministratori
+
+Chi scrive una demo manda una **proposta**: la vede solo lui, marcata *Da
+approvare*, finché un amministratore non la pubblica. Da lì in poi la demo
+pubblicata la modifica solo un amministratore.
+
+Un amministratore, dal **Profilo → Chi usa l'app**, aggiunge persone, azzera
+codici, e passa il ruolo ad altri (*Gestisci → Rendi amministratore*). L'ultimo
+amministratore non si può togliere: il catalogo non resta senza nessuno che
+approvi.
+
+Il primo amministratore si crea con `admin.sql`. Chi aggiungi trova già il suo
+nome all'ingresso e sceglie il codice da sé al primo accesso; chi lo dimentica,
 *Gestisci → Azzera il codice*.
+
+**Il limite, detto chiaro**: questi controlli vivono nell'app, non nel database.
+Senza la password del team le regole di Supabase lasciano scrivere chiunque,
+quindi chi sa usare gli strumenti per sviluppatori può aggirarli. Servono a
+tenere in ordine il lavoro del team, non a difendere i dati da un estraneo.
 
 ### Rimettere la password del team
 
@@ -54,7 +70,8 @@ proteggere segreti: la porta di casa resta la password del team.
 
 ### 1. Database
 Già fatto sul progetto **StoreTool**: le tabelle e le tredici demo di partenza
-ci sono. Il file `schema.sql` resta qui come sorgente: serve per rifare il
+ci sono. Per i ruoli serve anche `admin.sql`, che aggiunge la colonna e crea il
+primo amministratore. Il file `schema.sql` resta qui come sorgente: serve per rifare il
 database da zero o per un secondo ambiente. Si può rieseguire senza danni —
 se il catalogo non è vuoto, non tocca niente.
 

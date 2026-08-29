@@ -113,6 +113,10 @@
     margin: 18px 4px 8px; font-size: .82rem; font-weight: 700;
     color: var(--muted); text-transform: uppercase; letter-spacing: .05em;
   }
+  .avviso {
+    background: var(--warn-soft); color: var(--warn); border-radius: 13px;
+    padding: 10px 13px; font-size: .85rem; font-weight: 600; margin-bottom: 12px;
+  }
   .empty { text-align: center; color: var(--muted); padding: 30px 10px; font-size: .9rem; }
   .empty-big { text-align: center; color: var(--muted); padding: 90px 24px 30px; }
   .empty-big .glyph { font-size: 2.6rem; margin-bottom: 12px; }
@@ -250,6 +254,11 @@
   .t-txt { flex: 1; min-width: 0; }
   .t-name { font-size: .96rem; font-weight: 600; display: block; }
   .t-meta { font-size: .75rem; color: var(--muted); display: block; }
+  .ruolo {
+    font-size: .62rem; font-weight: 700; text-transform: uppercase; letter-spacing: .06em;
+    background: var(--accent-soft); color: var(--accent);
+    padding: 2px 7px; border-radius: 999px; vertical-align: middle; white-space: nowrap;
+  }
   .who-list em { display: block; font-style: normal; font-size: .72rem; color: var(--muted); margin-top: 2px; }
   .feed { display: flex; flex-direction: column; }
   .fitem { display: flex; gap: 12px; padding-bottom: 15px; position: relative; }
@@ -591,11 +600,24 @@ const recentRuns = (id, days = 30) => runsOf(id).filter(r => r.created_at >= day
 const demoOf = (id) => demos.find(d => d.id === id) || null;
 const stepsOf = (d) => Array.isArray(d?.steps) ? d.steps : [];
 const benefitsOf = (d) => Array.isArray(d?.benefits) ? d.benefits : [];
-const inCatalog = () => demos.filter(d => d.status !== "ritirata");
+// Le pubblicate le vedono tutti; le proposte solo chi le ha scritte e gli
+// amministratori; le ritirate restano agli amministratori.
+const inCatalog = () => demos.filter(d =>
+  d.status === "pronta" ||
+  (d.status === "bozza" && (isAdmin() || d.created_by === me)) ||
+  (d.status === "ritirata" && isAdmin()));
 const isFav = (id) => favs.some(f => f.demo_id === id && f.person_name === me);
 const myFavs = () => favs.filter(f => f.person_name === me);
 const favCount = (id) => favs.filter(f => f.demo_id === id).length;
 const myRuns = () => runs.filter(r => r.actor_name === me);
+const meStesso = () => persons.find(p => p.id === meId) || null;
+const isAdmin = () => !!meStesso()?.admin;
+const nAdmin = () => persons.filter(p => p.admin).length;
+
+// Una demo pubblicata la tocca solo un amministratore; la propria proposta,
+// finché è in attesa, resta in mano a chi l'ha scritta.
+const puoModificare = (d) => isAdmin() || (d.status !== "pronta" && d.created_by === me);
+const daApprovare = () => demos.filter(d => d.status === "bozza");
 
 // L'ordine dell'elenco: prima le pronte, poi le bozze; a parità,
 // quelle usate di recente più in alto.
@@ -686,14 +708,16 @@ function demoCard(d, conCategoria = false) {
         </div>
         <div class="sub">${esc(summary)}</div>
       </div>
-      <span class="badge ${d.status === "pronta" ? "done" : "off"}">${d.status === "pronta" ? "Pronta" : "Bozza"}</span>
+      <span class="badge ${d.status === "pronta" ? "done" : d.status === "ritirata" ? "off" : ""}">${
+        d.status === "pronta" ? "Pubblicata" : d.status === "ritirata" ? "Ritirata" : "Da approvare"}</span>
     </div>
     <div class="dmeta">
       ${conCategoria ? `<span>${esc(d.category)}</span>` : ""}
       <span class="dur">${DUR_TEMPO[d.duration] || esc(d.duration)}</span>
       <span class="lev-${esc(d.level)}">${esc(d.level)}</span>
       ${favCount(d.id) ? `<span class="fav">★ ${favCount(d.id)}</span>` : ""}
-      <button class="edit-chip" data-act="edit" data-id="${d.id}" title="Modifica" aria-label="Modifica">✏️</button>
+      ${puoModificare(d) ? `<button class="edit-chip" data-act="edit" data-id="${d.id}"
+        title="Modifica" aria-label="Modifica">✏️</button>` : ""}
     </div>
     ${!open ? "" : `
     ${d.hook ? `<div class="hook">“${esc(d.hook)}”</div>` : ""}
@@ -707,8 +731,9 @@ function demoCard(d, conCategoria = false) {
     ${d.owner ? `<div class="dline">👤 <b>La cura:</b> ${esc(d.owner)}</div>` : ""}
     <div class="acts">
       <button class="grow" data-act="run" data-id="${d.id}">✓ L'ho fatta</button>
-      <button class="ghost small" data-act="status" data-id="${d.id}">${d.status === "pronta" ? "Rimetti in bozza" : "Segna pronta"}</button>
-      <button class="ghost small" data-act="edit" data-id="${d.id}">✏️ Modifica</button>
+      ${isAdmin() ? `<button class="ghost small" data-act="status" data-id="${d.id}">${
+        d.status === "pronta" ? "Rimetti in attesa" : "✓ Approva e pubblica"}</button>` : ""}
+      ${puoModificare(d) ? `<button class="ghost small" data-act="edit" data-id="${d.id}">✏️ Modifica</button>` : ""}
     </div>`}
   </div>`;
 }
@@ -729,6 +754,7 @@ function wireCards(main) {
   main.querySelectorAll("[data-act=status]").forEach(b => {
     b.onclick = async () => {
       const d = demoOf(b.dataset.id);
+      if (!isAdmin()) { toast("Solo un amministratore può pubblicare"); return; }
       const status = d.status === "pronta" ? "bozza" : "pronta";
       const { error } = await db.from("demos")
         .update({ status, updated_at: new Date().toISOString() }).eq("id", d.id);
@@ -775,9 +801,12 @@ function renderElenco(main) {
     if (g) g.items.push(d); else groups.push({ cat: d.category, items: [d] });
   }
 
+  const attesa = daApprovare().length;
   main.innerHTML = `
     <div class="section-head"><h2>${inCatalog().length} demo in catalogo</h2>
       <button class="small" id="go-crea">+ Crea</button></div>
+    ${isAdmin() && attesa ? `<div class="avviso">${attesa} propost${attesa === 1 ? "a" : "e"}
+      in attesa di approvazione: le trovi con la targhetta “Da approvare”.</div>` : ""}
     <input type="search" id="q" placeholder="Cerca una demo, un cliente, un passo" value="${esc(query)}">
     <div class="chips filters" style="margin-top:12px">
       <button type="button" class="fchip" data-cat="tutte" aria-pressed="${catFilter === "tutte"}">Tutte</button>
@@ -903,12 +932,14 @@ function renderCrea(main) {
             placeholder="es. un iPhone demo con qualche foto"></div>
         <div class="field"><label>Chi la cura</label>
           <input type="text" name="owner" value="${esc(d?.owner ?? (d ? "" : me))}" placeholder="es. ${esc(me)}"></div>
-        <div class="field"><label>Stato</label>
+        ${isAdmin() ? `<div class="field"><label>Stato</label>
           <select name="status">
-            <option value="bozza" ${!d || d.status === "bozza" ? "selected" : ""}>Bozza · si sta ancora scrivendo</option>
-            <option value="pronta" ${d?.status === "pronta" ? "selected" : ""}>Pronta · si può fare in reparto</option>
+            <option value="bozza" ${!d || d.status === "bozza" ? "selected" : ""}>Da approvare · non ancora pubblicata</option>
+            <option value="pronta" ${d?.status === "pronta" ? "selected" : ""}>Pubblicata · la vedono tutti</option>
             <option value="ritirata" ${d?.status === "ritirata" ? "selected" : ""}>Ritirata · fuori dal catalogo</option>
-          </select></div>
+          </select></div>`
+        : `<div class="sub" style="margin-top:12px">La tua proposta va a un amministratore:
+            quando la approva, compare a tutto il team. Fino ad allora la vedi solo tu.</div>`}
       </div>
 
       <div class="acts">
@@ -963,7 +994,8 @@ function renderCrea(main) {
       benefits: fd.getAll("benefit").map(s => s.trim()).filter(Boolean),
       needs: (fd.get("needs") || "").trim() || null,
       owner: (fd.get("owner") || "").trim() || null,
-      status: fd.get("status"),
+      // solo un amministratore decide lo stato: agli altri resta la proposta
+      status: isAdmin() ? fd.get("status") : (d ? d.status : "bozza"),
       updated_at: new Date().toISOString(),
     };
     if (!row.name) { toast("Serve un nome"); return; }
@@ -981,7 +1013,7 @@ function renderCrea(main) {
       const { data, error } = await db.from("demos").insert(row).select().single();
       btn.disabled = false;
       if (error) { toast("Errore nel salvataggio"); return; }
-      toast("Aggiunta al catalogo");
+      toast(isAdmin() ? "Aggiunta al catalogo" : "Proposta inviata all'amministratore");
       openIds.add(data.id);
     }
     goTab("elenco");
@@ -1054,7 +1086,10 @@ function renderProfilo(main) {
   main.innerHTML = `
     <div class="card">
       <div class="row spread">
-        <div><h3>${esc(me)}</h3><div class="sub">Il nome che finisce accanto alle demo che fai</div></div>
+        <div><h3>${esc(me)}${isAdmin() ? ` <span class="ruolo">amministratore</span>` : ""}</h3>
+          <div class="sub">${isAdmin()
+            ? "Approvi le proposte e tieni in ordine le demo pubblicate"
+            : "Il nome che finisce accanto alle demo che fai"}</div></div>
         <button class="ghost small" id="edit-name">Cambia nome</button>
       </div>
       <div class="row" style="margin-top:12px">
@@ -1100,18 +1135,20 @@ function renderProfilo(main) {
       <div class="chips">${mai.map(d => `<button type="button" class="fchip" data-go="${d.id}">${esc(d.name)}</button>`).join("")}</div>` : ""}
 
     <div class="section-head" style="margin-top:24px"><h2>Chi usa l'app</h2>
-      <button class="small" id="add-person">+ Aggiungi</button></div>
-    <div class="sub" style="margin:0 4px 10px">Chi aggiungi qui trova già il suo nome all'ingresso:
-      sceglierà il codice da sé al primo accesso.</div>
+      ${isAdmin() ? `<button class="small" id="add-person">+ Aggiungi</button>` : ""}</div>
+    <div class="sub" style="margin:0 4px 10px">${isAdmin()
+      ? "Chi aggiungi qui trova già il suo nome all'ingresso: sceglierà il codice da sé al primo accesso."
+      : "Le persone le gestisce un amministratore."}</div>
     ${persons.map(p => {
       const suoi = runs.filter(r => r.actor_name === p.name).length;
       return `<div class="t-row">
         <span class="t-txt">
-          <span class="t-name">${esc(p.name)}${p.id === meId ? " · tu" : ""}</span>
+          <span class="t-name">${esc(p.name)}${p.id === meId ? " · tu" : ""}${
+            p.admin ? ` <span class="ruolo">admin</span>` : ""}</span>
           <span class="t-meta">${hasCode(p) ? "codice impostato" : "deve ancora scegliere il codice"}
             · ${suoi} demo fatte</span>
         </span>
-        <button class="ghost small" data-person="${p.id}">Gestisci</button>
+        ${isAdmin() ? `<button class="ghost small" data-person="${p.id}">Gestisci</button>` : ""}
       </div>`;
     }).join("")}
 
@@ -1170,7 +1207,8 @@ function renderProfilo(main) {
   main.querySelectorAll("[data-go]").forEach(b => {
     b.onclick = () => { catFilter = "tutte"; query = ""; openIds.add(b.dataset.go); goTab("elenco"); };
   });
-  $("#add-person").onclick = () => {
+  const btnAdd = $("#add-person");
+  if (btnAdd) btnAdd.onclick = () => {
     openDialog("Aggiungi una persona", `
       <div class="field"><label>Nome *</label>
         <input type="text" name="name" placeholder="es. Vladi" required></div>
@@ -1200,11 +1238,14 @@ function renderProfilo(main) {
         <div class="sub" style="margin-top:8px">${suoi} demo fatte · ${
           hasCode(p) ? "codice impostato" : "deve ancora scegliere il codice"}</div>
         <div class="row" style="margin-top:14px;gap:8px">
+          <button type="button" class="ghost small" id="toggle-admin">${
+            p.admin ? "Togli amministratore" : "Rendi amministratore"}</button>
           ${hasCode(p) ? `<button type="button" class="ghost small" id="reset-code">Azzera il codice</button>` : ""}
           <button type="button" class="danger small" id="del-person">Elimina</button>
         </div>
-        <div class="sub" style="margin-top:8px">Azzerando il codice, la persona ne sceglie uno nuovo
-          al prossimo accesso. Eliminandola, le demo che ha fatto restano nel registro.</div>`,
+        <div class="sub" style="margin-top:8px">Un amministratore approva le proposte e modifica le demo
+          già pubblicate. Azzerando il codice, la persona ne sceglie uno nuovo al prossimo accesso.
+          Eliminandola, le demo che ha fatto restano nel registro.</div>`,
         async (fd) => {
           const nuovo = (fd.get("name") || "").trim();
           const vecchio = p.name;   // da leggere prima: dopo l'update non è più il suo
@@ -1219,6 +1260,18 @@ function renderProfilo(main) {
           await refresh();
         },
         (form) => {
+          form.querySelector("#toggle-admin").onclick = async () => {
+            // il catalogo non può restare senza nessuno che approvi
+            if (p.admin && nAdmin() <= 1) { toast("Serve almeno un amministratore"); return; }
+            const admin = !p.admin;
+            if (!confirm(admin ? `Rendere ${p.name} amministratore?`
+                               : `Togliere il ruolo di amministratore a ${p.name}?`)) return;
+            const { error } = await db.from("demo_people").update({ admin }).eq("id", p.id);
+            if (error) { toast("Errore nel salvataggio"); return; }
+            $("#dlg").close();
+            toast(admin ? "Ora è amministratore" : "Ruolo tolto");
+            await refresh();
+          };
           const reset = form.querySelector("#reset-code");
           if (reset) reset.onclick = async () => {
             if (!confirm(`Azzerare il codice di ${p.name}? Ne sceglierà uno nuovo al prossimo accesso.`)) return;
