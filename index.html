@@ -345,7 +345,11 @@
   .login-box { width: min(92vw, 380px); text-align: center; }
   .login-box .logo { font-size: 3rem; margin-bottom: 8px; }
   .login-box .marchio { display: block; margin: 0 auto 14px; }
-  .login-box .pitch { line-height: 1.5; margin-bottom: 22px; }
+  .login-box .pitch { line-height: 1.5; margin-bottom: 10px; }
+  .login-box .claim {
+    color: var(--accent); font-size: .95rem; font-weight: 600;
+    line-height: 1.6; margin-bottom: 24px;
+  }
   .login-box .sottotitolo { font-size: 1.05rem; margin-bottom: 6px; }
   .login-box .chisei {
     color: var(--text); font-size: .92rem; font-weight: 600; margin-bottom: 10px;
@@ -520,9 +524,8 @@ function showWho(state, name = "") {
 const presentazione = () => `
   <img class="marchio" src="icon.svg" alt="" width="76" height="76">
   <h1>Demo interattive</h1>
-  <p class="pitch">Una raccolta di demo brevi da fare durante le interazioni:
-    cosa dire al cliente, passo per passo, e i vantaggi con cui si chiude.<br>
-    Scopri quelle che non conosci, tieni sottomano le tue preferite, proponi la tua.</p>`;
+  <p class="pitch">Una raccolta di demo brevi da fare durante le interazioni.</p>
+  <p class="claim">Prova l'approccio,<br>guida la demo passo passo,<br>racconta i vantaggi!</p>`;
 
 function renderWho() {
   const box = $("#who-box");
@@ -616,7 +619,7 @@ function renderWho() {
     ${persons.length ? `<input type="search" id="who-cerca" placeholder="Il tuo nome"
       autocomplete="off" autocapitalize="words" enterkeyhint="go">
       <div class="who-list" id="who-trovati"></div>` : ""}
-    <button type="button" class="ghost" id="who-new" style="margin-top:16px;width:100%">Sono nuovo, registrami</button>`;
+    <button type="button" class="ghost" id="who-new" style="margin-top:16px;width:100%">È la mia prima volta, registrami</button>`;
   $("#who-new").onclick = () => showWho("register");
 
   const cerca = $("#who-cerca");
