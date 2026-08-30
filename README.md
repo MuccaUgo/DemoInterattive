@@ -72,10 +72,10 @@ La scelta resta sul telefono.
 
 ## Come si entra
 
-La schermata d'ingresso dice prima di tutto cos'è: il marchio, il nome e due
-righe — *«Una raccolta di demo brevi da fare durante le interazioni: cosa dire
-al cliente, passo per passo, e i vantaggi con cui si chiude. Scopri quelle che
-non conosci, tieni sottomano le tue preferite, proponi la tua.»*
+La schermata d'ingresso dice prima di tutto cos'è: il marchio, il nome, e
+*«Una raccolta di demo brevi da fare durante le interazioni»* seguito dalle tre
+righe che dicono com'è fatta una demo — *prova l'approccio, guida la demo passo
+passo, racconta i vantaggi!*
 
 Poi si scrivono **le prime lettere del proprio nome**: compare
 solo quello, e si entra col **codice di 6 cifre**. L'elenco di chi usa l'app non
