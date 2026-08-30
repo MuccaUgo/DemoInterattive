@@ -165,6 +165,12 @@ Dopo circa un minuto il sito è online.
 ### 3. Su iPhone
 Apri l'URL in Safari → **Condividi → Aggiungi a schermata Home**.
 
+L'icona sulla schermata Home e nell'anteprima dei link viene da `icon-180.png`:
+iOS l'SVG non lo guarda, e senza quel PNG ripesca l'icona della radice del
+dominio, che è quella di Store Tasks. `social.png` è l'immagine che compare
+quando il link si manda a qualcuno (og:image). Tutt'e due si rifanno da
+`icon.svg` con lo script di prova `png.mjs`.
+
 ## Configurazione
 
 URL e chiave pubblica Supabase sono in cima allo `<script>` di `index.html`
