@@ -352,6 +352,8 @@
     font-size: .9rem; font-weight: 600; padding: 14px 8px 4px; cursor: pointer; width: 100%;
   }
   .who-list { display: flex; flex-direction: column; gap: 8px; margin-top: 16px; max-height: 45dvh; overflow-y: auto; }
+  .who-list:empty { margin-top: 0; }
+  .who-list .niente { font-size: .85rem; color: var(--muted); margin: 4px 0 0; }
   .who-list button { background: var(--card); color: var(--text); border: 1px solid var(--line); text-align: left; }
   .hidden { display: none !important; }
 </style>
@@ -463,6 +465,8 @@ function toast(msg) {
   t.textContent = msg; t.classList.add("show");
   clearTimeout(t._h); t._h = setTimeout(() => t.classList.remove("show"), 2600);
 }
+// per cercare un nome senza far caso a maiuscole e accenti
+const senzaAccenti = (t) => String(t).toLowerCase().normalize("NFD").replace(/\p{Diacritic}/gu, "");
 const esc = (s) => (s ?? "").toString().replace(/[&<>"']/g, c => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[c]));
 const fmtTs = (ts) => new Date(ts).toLocaleString("it-IT", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
 const fmtDay = (ts) => new Date(ts).toLocaleDateString("it-IT", { weekday: "long", day: "numeric", month: "long" });
@@ -588,19 +592,41 @@ function renderWho() {
     return;
   }
 
-  // pick
+  // pick — l'elenco di chi usa l'app non sta lì in bella vista: si scrivono
+  // le prime lettere del proprio nome e compare solo quello che serve
   box.innerHTML = `
     <div class="logo">👋</div>
     <h1>Chi sei?</h1>
-    <p>${persons.length ? "Scegli il tuo nome, poi il codice." : "Nessuno si è ancora registrato: comincia tu."}</p>
-    ${persons.length ? `<div class="who-list">${persons.map(p =>
-      `<button type="button" data-who="${esc(p.name)}">${esc(p.name)}${
-        hasCode(p) ? "" : `<em>primo accesso</em>`}</button>`).join("")}</div>` : ""}
+    <p>${persons.length ? "Scrivi le prime lettere del tuo nome." : "Nessuno si è ancora registrato: comincia tu."}</p>
+    ${persons.length ? `<input type="search" id="who-cerca" placeholder="Il tuo nome"
+      autocomplete="off" autocapitalize="words" enterkeyhint="go">
+      <div class="who-list" id="who-trovati"></div>` : ""}
     <button type="button" class="ghost" id="who-new" style="margin-top:16px;width:100%">Sono nuovo, registrami</button>`;
-  box.querySelectorAll("[data-who]").forEach(b => {
-    b.onclick = () => showWho("code", b.dataset.who);
-  });
   $("#who-new").onclick = () => showWho("register");
+
+  const cerca = $("#who-cerca");
+  if (!cerca) return;
+  const trovati = $("#who-trovati");
+  const disegna = () => {
+    const q = senzaAccenti(cerca.value.trim());
+    if (!q) { trovati.innerHTML = ""; return; }
+    const list = persons.filter(p => senzaAccenti(p.name).includes(q));
+    trovati.innerHTML = list.length
+      ? list.map(p => `<button type="button" data-who="${esc(p.name)}">${esc(p.name)}${
+          hasCode(p) ? "" : `<em>primo accesso</em>`}</button>`).join("")
+      : `<p class="niente">Nessun nome così. Se sei nuovo, registrati qui sotto.</p>`;
+    trovati.querySelectorAll("[data-who]").forEach(b => {
+      b.onclick = () => showWho("code", b.dataset.who);
+    });
+  };
+  cerca.oninput = disegna;
+  cerca.onkeydown = (e) => {
+    if (e.key !== "Enter") return;
+    e.preventDefault();   // sennò il campo di ricerca si comporta da form
+    const soli = trovati.querySelectorAll("[data-who]");
+    if (soli.length === 1) soli[0].click();
+  };
+  cerca.focus();
 }
 
 function setMe(person) {

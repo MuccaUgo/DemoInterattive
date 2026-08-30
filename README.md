@@ -72,9 +72,11 @@ La scelta resta sul telefono.
 
 ## Come si entra
 
-Si apre il sito e si sceglie il proprio nome, poi il **codice di 6 cifre**.
-La prima volta ci si registra: nome e codice, e da un altro telefono ci si
-ritrova con quelli.
+Si apre il sito e si scrivono **le prime lettere del proprio nome**: compare
+solo quello, e si entra col **codice di 6 cifre**. L'elenco di chi usa l'app non
+sta lì in bella vista — con un reparto intero sarebbe una lista di nomi aperta a
+chiunque conosca l'indirizzo. La prima volta ci si registra: nome e codice, e da
+un altro telefono ci si ritrova con quelli.
 
 Non c'è più la password del team: `senza-password.sql` è stato eseguito e le
 regole valgono anche per chi non ha fatto login. Vuol dire che **chiunque
