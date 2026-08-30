@@ -8,7 +8,25 @@
 <meta name="theme-color" content="#0f1220">
 <link rel="manifest" href="manifest.json">
 <link rel="icon" href="icon.svg" type="image/svg+xml">
-<link rel="apple-touch-icon" href="icon.svg">
+<link rel="icon" href="icon-32.png" type="image/png" sizes="32x32">
+<!-- iOS l'SVG non lo guarda: senza questo PNG l'icona sulla schermata Home
+     e nell'anteprima dei link diventa quella della radice del dominio. -->
+<link rel="apple-touch-icon" sizes="180x180" href="icon-180.png">
+
+<!-- Come si presenta il link quando lo si manda a qualcuno -->
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Demo interattive">
+<meta property="og:title" content="Demo interattive">
+<meta property="og:description" content="Una raccolta di demo brevi da fare durante le interazioni. Prova l'approccio, guida la demo passo passo, racconta i vantaggi!">
+<meta property="og:url" content="https://muccaugo.github.io/DemoInterattive/">
+<meta property="og:image" content="https://muccaugo.github.io/DemoInterattive/social.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Demo interattive">
+<meta name="twitter:description" content="Una raccolta di demo brevi da fare durante le interazioni. Prova l'approccio, guida la demo passo passo, racconta i vantaggi!">
+<meta name="twitter:image" content="https://muccaugo.github.io/DemoInterattive/social.png">
+<meta name="description" content="Una raccolta di demo brevi da fare durante le interazioni. Prova l'approccio, guida la demo passo passo, racconta i vantaggi!">
 <title>Demo Interattive</title>
 <style>
   :root {
@@ -295,12 +313,27 @@
   .bar i.f { background: var(--warn); }
   .rank-num { font-size: .78rem; color: var(--muted); font-variant-numeric: tabular-nums; flex: none; min-width: 40px; text-align: right; }
   .t-row {
-    display: flex; align-items: center; gap: 10px; padding: 11px 13px; background: var(--card);
-    border: 1px solid var(--line); border-radius: 14px; margin-bottom: 8px;
+    display: flex; align-items: center; gap: 11px; padding: 9px 12px; background: var(--card);
+    border: 1px solid var(--line); border-radius: 14px; margin-bottom: 6px;
+  }
+  .t-ini {
+    flex: none; width: 34px; height: 34px; border-radius: 999px;
+    background: var(--accent-soft); color: var(--accent);
+    font-size: .74rem; font-weight: 700; display: grid; place-items: center;
   }
   .t-txt { flex: 1; min-width: 0; }
-  .t-name { font-size: .96rem; font-weight: 600; display: block; }
-  .t-meta { font-size: .75rem; color: var(--muted); display: block; }
+  .t-name {
+    font-size: .94rem; font-weight: 600; display: flex; align-items: center;
+    gap: 6px; flex-wrap: wrap;
+  }
+  .t-name i { font-style: normal; font-weight: 500; color: var(--muted); font-size: .8rem; }
+  .t-meta { font-size: .74rem; color: var(--muted); display: block; margin-top: 1px; }
+  .t-meta.manca { color: var(--warn); font-weight: 600; }
+  .t-piu {
+    flex: none; background: none; border: 1px solid var(--line); border-radius: 999px;
+    color: var(--muted); padding: 3px 11px; font-size: 1.05rem; line-height: 1.2;
+  }
+  .t-piu:hover { border-color: var(--accent); color: var(--accent); }
   .ruolo {
     font-size: .62rem; font-weight: 700; text-transform: uppercase; letter-spacing: .06em;
     background: var(--accent-soft); color: var(--accent);
@@ -476,6 +509,8 @@ function toast(msg) {
   clearTimeout(t._h); t._h = setTimeout(() => t.classList.remove("show"), 2600);
 }
 // per cercare un nome senza far caso a maiuscole e accenti
+const iniziali = (nome) => String(nome).trim().split(/\s+/).slice(0, 2)
+  .map(w => w[0] || "").join("").toUpperCase();
 const senzaAccenti = (t) => String(t).toLowerCase().normalize("NFD").replace(/\p{Diacritic}/gu, "");
 const esc = (s) => (s ?? "").toString().replace(/[&<>"']/g, c => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[c]));
 const fmtTs = (ts) => new Date(ts).toLocaleString("it-IT", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
@@ -1504,20 +1539,25 @@ function renderProfilo(main) {
       <div class="chips">${mai.map(d => `<button type="button" class="fchip" data-go="${d.id}">${esc(d.name)}</button>`).join("")}</div>` : ""}
 
     <div class="section-head" style="margin-top:24px"><h2>Chi usa l'app</h2>
-      ${isAdmin() ? `<button class="small" id="add-person">+ Aggiungi</button>` : ""}</div>
+      ${isAdmin() ? `<button class="ghost small" id="add-person">+ Aggiungi</button>` : ""}</div>
     <div class="sub" style="margin:0 4px 10px">${isAdmin()
       ? "Chi aggiungi qui trova già il suo nome all'ingresso: sceglierà il codice da sé al primo accesso."
       : "Le persone le gestisce un amministratore."}</div>
     ${persons.map(p => {
       const suoi = runs.filter(r => r.actor_name === p.name).length;
+      // sotto il nome ci va solo quello che vale la pena dire: "codice
+      // impostato · 0 demo fatte" ripetuto su ogni riga non diceva niente
+      const nota = !hasCode(p) ? `<span class="t-meta manca">deve ancora scegliere il codice</span>`
+        : suoi ? `<span class="t-meta">${suoi} demo fatt${suoi === 1 ? "a" : "e"}</span>` : "";
       return `<div class="t-row">
+        <span class="t-ini">${esc(iniziali(p.name))}</span>
         <span class="t-txt">
-          <span class="t-name">${esc(p.name)}${p.id === meId ? " · tu" : ""}${
+          <span class="t-name">${esc(p.name)}${p.id === meId ? `<i>tu</i>` : ""}${
             adminDi(p) ? ` <span class="ruolo">admin</span>` : ""}</span>
-          <span class="t-meta">${hasCode(p) ? "codice impostato" : "deve ancora scegliere il codice"}
-            · ${suoi} demo fatte</span>
+          ${nota}
         </span>
-        ${isAdmin() ? `<button class="ghost small" data-person="${p.id}">Gestisci</button>` : ""}
+        ${isAdmin() ? `<button class="t-piu" data-person="${p.id}"
+          title="Gestisci ${esc(p.name)}" aria-label="Gestisci ${esc(p.name)}">&#8943;</button>` : ""}
       </div>`;
     }).join("")}
 
