@@ -42,8 +42,8 @@ create table if not exists public.demos (
                                              -- Professionista · Chi crea contenuti ·
                                              -- Chi compra e vende online · Chi viaggia ·
                                              -- Disabilità visiva · uditiva · motoria · Dislessia e lettura
-  duration text not null default 'breve',    -- lampo · breve · completa
-  level text not null default 'facile',      -- facile · media · avanzata
+  duration text not null default 'breve',    -- non si scrive più dall'app: sono tutte brevi
+  level text not null default 'facile',      -- non si scrive più dall'app: sono tutte facili
   steps jsonb not null default '[]'::jsonb,  -- i passaggi da dire al cliente, in ordine
   needs text,                                -- non si scrive più dall'app: quello che serve
                                              -- sta nel primo passaggio della demo

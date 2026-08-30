@@ -18,7 +18,8 @@ Sito a sé, database a sé. Sta accanto a **Store Tasks**, non dentro.
 - **Crea la demo** — modulo a tutta pagina: cos'è (nome e tag), come si attacca
   (la frase di apertura e a chi sta bene), i passaggi (pochi e chiari, si
   aggiungono uno alla volta) e i vantaggi. Lo stesso modulo serve per le
-  modifiche.
+  modifiche. Quanto dura e quanto è difficile non si scelgono: una demo
+  interattiva è breve e facile, sennò in reparto non si fa.
 - **Profilo** — il tuo nome e il tuo codice, quante demo hai fatto, quelle che
   fai più spesso, le tue ultime, e come sta il catalogo del team.
 

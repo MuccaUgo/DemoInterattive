@@ -214,12 +214,8 @@
     font-size: .73rem; font-weight: 600; padding: 2px 8px; border-radius: 999px;
     background: var(--bg); color: var(--muted); white-space: nowrap;
   }
-  .dmeta span.dur { background: var(--accent-soft); color: var(--accent); }
-  .dmeta span.lev-avanzata { background: rgba(211, 63, 73, .14); color: var(--danger); }
-  .dmeta span.lev-media { background: var(--warn-soft); color: var(--warn); }
   .dmeta span.fav { background: rgba(240, 165, 0, .16); color: #a06f00; }
-  /* a chi sta bene: contornate, così non si confondono con la durata,
-     che è pure lei del colore dell'accento ma piena */
+  /* a chi sta bene: contornate, per distinguerle dai tag della demo */
   .dmeta span.chi {
     background: transparent; color: var(--accent);
     box-shadow: inset 0 0 0 1px var(--accent-soft);
@@ -429,10 +425,6 @@ const TAG_SEP = " · ";
 const CLIENTI = ["Chiunque", "Chi è alle prime armi", "Famiglia", "Studente",
   "Professionista", "Chi crea contenuti", "Chi compra e vende online", "Chi viaggia",
   "Disabilità visiva", "Disabilità uditiva", "Disabilità motoria", "Dislessia e lettura"];
-const DURATIONS = ["lampo", "breve", "completa"];
-const DUR_HINT = { lampo: "30 secondi", breve: "2 minuti", completa: "5 minuti" };
-const DUR_TEMPO = { lampo: "30 s", breve: "2 min", completa: "5 min" };
-const LEVELS = ["facile", "media", "avanzata"];
 const OUTCOMES = ["wow", "ok", "fiacca"];
 const OUT_COLOR = { wow: "var(--ok)", ok: "var(--accent)", fiacca: "var(--warn)" };
 
@@ -854,8 +846,6 @@ function demoCard(d) {
     <div class="dmeta">
       ${tagsOf(d).map(t => `<span>${esc(t)}</span>`).join("")}
       ${clientiOf(d).map(t => `<span class="chi">${esc(t)}</span>`).join("")}
-      <span class="dur">${DUR_TEMPO[d.duration] || esc(d.duration)}</span>
-      <span class="lev-${esc(d.level)}">${esc(d.level)}</span>
       ${favCount(d.id) ? `<span class="fav">★ ${favCount(d.id)}</span>` : ""}
       ${puoModificare(d) ? `<button class="edit-chip" data-act="edit" data-id="${d.id}"
         title="Modifica" aria-label="Modifica">✏️</button>` : ""}
@@ -1216,8 +1206,6 @@ function renderCrea(main) {
   if (formMounted === key && main.querySelector("#demo-form")) return;
   formMounted = key;
 
-  const opt = (name, values, cur) => values.map(v =>
-    `<option value="${v}" ${cur === v ? "selected" : ""}>${v}${name === "duration" ? ` · ${DUR_HINT[v]}` : ""}</option>`).join("");
   const steps = stepsOf(d), bens = benefitsOf(d);
 
   main.innerHTML = `
@@ -1228,12 +1216,6 @@ function renderCrea(main) {
         <div class="field"><label>Tag</label>
           ${pickerHtml("tagpick", unione(tuttiTag(), tagsOf(d)), tagsOf(d), "tags", "Aggiungi un tag")}
           <div class="sub tag-nota">Quanti ne servono: filtri e ricerca li guardano tutti.</div></div>
-        <div class="row" style="gap:8px">
-          <div class="field" style="flex:1;min-width:130px"><label>Quanto dura</label>
-            <select name="duration">${opt("duration", DURATIONS, d?.duration || "breve")}</select></div>
-          <div class="field" style="flex:1;min-width:130px"><label>Quanto è difficile</label>
-            <select name="level">${opt("level", LEVELS, d?.level || "facile")}</select></div>
-        </div>
       </div>
 
       <div class="card">
@@ -1329,8 +1311,6 @@ function renderCrea(main) {
       category: tags.join(TAG_SEP),
       hook: (fd.get("hook") || "").trim() || null,
       who: chi.join(TAG_SEP) || null,
-      duration: fd.get("duration"),
-      level: fd.get("level"),
       steps: fd.getAll("step").map(s => s.trim()).filter(Boolean),
       benefits: fd.getAll("benefit").map(s => s.trim()).filter(Boolean),
       // solo un amministratore decide lo stato: agli altri resta la proposta
