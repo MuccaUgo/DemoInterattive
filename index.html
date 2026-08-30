@@ -277,9 +277,21 @@
   /* ── Crea la demo ── */
   #demo-form .card h3 { margin-bottom: 8px; }
   .steps-ed { counter-reset: st; display: flex; flex-direction: column; gap: 8px; margin-top: 12px; }
-  .step-ed { display: flex; align-items: center; gap: 9px; }
+  .step-ed { display: flex; align-items: flex-start; gap: 9px; position: relative; }
+  .step-ed > b {
+    position: absolute; right: 46px; bottom: 7px;
+    font-size: .68rem; font-weight: 700; color: var(--warn); pointer-events: none;
+  }
+  .step-ed textarea {
+    min-height: 44px; padding: 11px 12px; line-height: 1.4;
+    overflow: hidden; resize: none;
+  }
+  .field label b {
+    float: right; font-weight: 700; font-size: .72rem; color: var(--warn);
+  }
   .step-ed i {
     counter-increment: st; flex: none; width: 21px; height: 21px; border-radius: 999px;
+    margin-top: 12px;
     background: var(--accent-soft); color: var(--accent);
     font-size: .72rem; font-weight: 700; font-style: normal; display: grid; place-items: center;
   }
@@ -288,7 +300,7 @@
   .step-ed.ben i::before { content: none; }
   .step-ed input { flex: 1; }
   .step-ed .x {
-    flex: none; background: none; color: var(--muted); padding: 10px 6px;
+    flex: none; background: none; color: var(--muted); padding: 10px 6px; margin-top: 2px;
     font-size: .95rem; min-width: 34px;
   }
   /* ── Profilo ── */
@@ -780,6 +792,7 @@ const unione = (base, prese) => {
 };
 const tuttiTag = () => unione(TAGS, demos.flatMap(tagsOf));
 const tuttiClienti = () => unione(CLIENTI, demos.flatMap(clientiOf));
+const autori = (d) => unione(persons.map(p => p.name), [d?.created_by, me].filter(Boolean));
 // un "·" dentro una targhetta spezzerebbe l'elenco: si scrive senza
 const pulisciTag = (t) => t.replace(/[·|]/g, " ").replace(/\s+/g, " ").trim().slice(0, 28);
 const benefitsOf = (d) => Array.isArray(d?.benefits) ? d.benefits : [];
@@ -934,7 +947,7 @@ function demoCard(d) {
     ${steps.length ? `<div class="dsteps">${steps.map(s => `<div class="dstep"><i></i><span>${esc(s)}</span></div>`).join("")}</div>`
       : `<div class="dline">Nessun passo scritto: aprila in modifica e racconta cosa dire al cliente.</div>`}
     ${bens.length ? `<div class="dbens">
-      <div class="dbens-t">Cosa ci guadagna il cliente</div>
+      <div class="dbens-t">Perché è utile</div>
       ${bens.map(b => `<div class="dben"><i>✓</i><span>${esc(b)}</span></div>`).join("")}
     </div>` : ""}
     ${d.created_by ? `<div class="dline">✍️ <b>Proposta da:</b> ${esc(d.created_by)}</div>` : ""}
@@ -1260,10 +1273,16 @@ function wirePicker(form, id) {
   return leggi;
 }
 
+// Una riga sola non basta per una frase da dire a voce: il riquadro cresce
+// mentre scrivi, e i 200 caratteri tengono il passaggio corto per davvero.
+const MAX_TESTO = 200;
+
 function stepRow(value = "") {
   return `<div class="step-ed">
     <i></i>
-    <input type="text" name="step" value="${esc(value)}" placeholder="Chiedi al cliente di…">
+    <textarea name="step" rows="1" maxlength="${MAX_TESTO}" data-cresce
+      placeholder="Chiedi di aprire…">${esc(value)}</textarea>
+    <b data-conta></b>
     <button type="button" class="x" data-del title="Togli il passo">✕</button>
   </div>`;
 }
@@ -1271,9 +1290,30 @@ function stepRow(value = "") {
 function benefitRow(value = "") {
   return `<div class="step-ed ben">
     <i>✓</i>
-    <input type="text" name="benefit" value="${esc(value)}" placeholder="Così il cliente…">
+    <textarea name="benefit" rows="1" maxlength="${MAX_TESTO}" data-cresce
+      placeholder="Così…">${esc(value)}</textarea>
+    <b data-conta></b>
     <button type="button" class="x" data-del title="Togli il vantaggio">✕</button>
   </div>`;
+}
+
+// il riquadro si alza da sé fin dove serve, e conta le battute solo
+// quando il limite comincia a farsi vicino
+function cresci(el) {
+  el.style.height = "auto";
+  el.style.height = el.scrollHeight + "px";
+  const box = el.closest(".step-ed, .field");
+  const cnt = box && box.querySelector("[data-conta]");
+  if (!cnt) return;
+  const n = el.value.length;
+  cnt.textContent = n > MAX_TESTO - 50 ? `${MAX_TESTO - n}` : "";
+}
+
+function wireTesti(root) {
+  root.querySelectorAll("[data-cresce]").forEach(el => {
+    el.oninput = () => cresci(el);
+    cresci(el);
+  });
 }
 
 function renderCrea(main) {
@@ -1298,18 +1338,19 @@ function renderCrea(main) {
       </div>
 
       <div class="card">
-        <h3>Come si attacca</h3>
-        <div class="field"><label>La frase con cui si apre</label>
-          <input type="text" name="hook" value="${esc(d?.hook || "")}"
-            placeholder="es. Hai già l'iPhone? Guarda cosa fa adesso."></div>
-        <div class="field"><label>A quale cliente sta bene</label>
+        <h3>Esempio di approccio</h3>
+        <div class="field"><label>La frase con cui si apre <b data-conta></b></label>
+          <textarea name="hook" rows="1" maxlength="${MAX_TESTO}" data-cresce
+            placeholder="es. Hai già l'iPhone? Guarda cosa fa adesso.">${esc(d?.hook || "")}</textarea></div>
+        <div class="field"><label>A chi sta bene</label>
           ${pickerHtml("chipick", unione(tuttiClienti(), clientiOf(d)), clientiOf(d), "who", "Aggiungi un tipo di cliente")}</div>
       </div>
 
       <div class="card">
-        <h3>I passaggi da dire al cliente</h3>
-        <div class="sub">Pochi e chiari, nell'ordine in cui si fanno. Scrivili come li diresti:
-          “Chiedi al cliente di aprire la fotocamera dell'iPhone che ha in mano”.</div>
+        <h3>Prova a dire</h3>
+        <div class="sub">Pochi passaggi e chiari, nell'ordine in cui si fanno. Scrivili
+          come li diresti: “Chiedi di aprire la fotocamera dell'iPhone che hai in mano”.
+          Al massimo 200 caratteri per passaggio.</div>
         <div class="steps-ed" id="steps-ed">
           ${(steps.length ? steps : ["", "", ""]).map(s => stepRow(s)).join("")}
         </div>
@@ -1317,8 +1358,8 @@ function renderCrea(main) {
       </div>
 
       <div class="card">
-        <h3>Cosa ci guadagna il cliente</h3>
-        <div class="sub">Come si chiude la demo: un paio di vantaggi concreti, nella sua vita di tutti i giorni.</div>
+        <h3>Perché è utile</h3>
+        <div class="sub">Come si chiude la demo: un paio di vantaggi concreti, nella vita di tutti i giorni.</div>
         <div class="steps-ed" id="bens-ed">
           ${(bens.length ? bens : ["", ""]).map(b => benefitRow(b)).join("")}
         </div>
@@ -1326,13 +1367,18 @@ function renderCrea(main) {
       </div>
 
       <div class="card">
-        <h3>Prima di finire</h3>
         ${isAdmin() ? `<div class="field" style="margin-top:0"><label>Stato</label>
           <select name="status">
             <option value="bozza" ${!d || d.status === "bozza" ? "selected" : ""}>Da approvare · non ancora pubblicata</option>
             <option value="pronta" ${d?.status === "pronta" ? "selected" : ""}>Pubblicata · la vedono tutti</option>
             <option value="ritirata" ${d?.status === "ritirata" ? "selected" : ""}>Ritirata · fuori dal catalogo</option>
-          </select></div>`
+          </select></div>
+          <div class="field"><label>Proposta da</label>
+            <select name="created_by">${autori(d).map(n =>
+              `<option value="${esc(n)}" ${(d?.created_by || me) === n ? "selected" : ""}>${esc(n)}${
+                n === me ? " · tu" : ""}</option>`).join("")}</select>
+            <div class="sub" style="margin-top:6px">Se la scrivi al posto di qualcun altro,
+              il merito resta suo.</div></div>`
         : `<div class="sub" style="margin-top:12px">La tua proposta va a un amministratore:
             quando la approva, compare a tutto il team. Fino ad allora la vedi solo tu.</div>`}
       </div>
@@ -1351,7 +1397,10 @@ function renderCrea(main) {
     box.querySelectorAll("[data-del]").forEach(b => {
       b.onclick = () => {
         const rows = box.querySelectorAll(".step-ed");
-        if (rows.length <= 1) { b.closest(".step-ed").querySelector("input").value = ""; return; }
+        if (rows.length <= 1) {
+          const t = b.closest(".step-ed").querySelector("textarea");
+          t.value = ""; cresci(t); return;
+        }
         b.closest(".step-ed").remove();
       };
     });
@@ -1359,13 +1408,15 @@ function renderCrea(main) {
   const addTo = (box, html) => {
     box.insertAdjacentHTML("beforeend", html);
     wireList(box);
-    box.querySelector(".step-ed:last-child input").focus();
+    wireTesti(box);
+    box.querySelector(".step-ed:last-child textarea").focus();
   };
   const tagScelti = wirePicker(form, "tagpick");
   const chiScelti = wirePicker(form, "chipick");
 
   const stepsEd = $("#steps-ed"), bensEd = $("#bens-ed");
   wireList(stepsEd); wireList(bensEd);
+  wireTesti(form);
   $("#add-step").onclick = () => addTo(stepsEd, stepRow());
   $("#add-ben").onclick = () => addTo(bensEd, benefitRow());
   $("#cancel-demo").onclick = () => goTab("elenco");
@@ -1396,6 +1447,8 @@ function renderCrea(main) {
       // una proposta rifiutata, se la si corregge, torna in coda da sola
       status: isAdmin() ? fd.get("status")
         : (d ? (d.status === "rifiutata" ? "bozza" : d.status) : "bozza"),
+      // solo un amministratore può dire che l'ha proposta un altro
+      ...(isAdmin() ? { created_by: fd.get("created_by") || me } : {}),
       updated_at: new Date().toISOString(),
     };
     const riproposta = !!d && d.status === "rifiutata" && row.status === "bozza";
@@ -1412,7 +1465,7 @@ function renderCrea(main) {
       toast(riproposta ? "Riproposta all'amministratore" : "Salvata");
       openIds.add(d.id);
     } else {
-      row.created_by = me;
+      if (!row.created_by) row.created_by = me;
       row.position = demos.reduce((m, x) => Math.max(m, x.position || 0), 0) + 1;
       const { data, error } = await db.from("demos").insert(row).select().single();
       btn.disabled = false;
