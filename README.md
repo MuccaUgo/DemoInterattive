@@ -72,7 +72,12 @@ La scelta resta sul telefono.
 
 ## Come si entra
 
-Si apre il sito e si scrivono **le prime lettere del proprio nome**: compare
+La schermata d'ingresso dice prima di tutto cos'è: il marchio, il nome e due
+righe — *«Una raccolta di demo brevi da fare durante le interazioni: cosa dire
+al cliente, passo per passo, e i vantaggi con cui si chiude. Scopri quelle che
+non conosci, tieni sottomano le tue preferite, proponi la tua.»*
+
+Poi si scrivono **le prime lettere del proprio nome**: compare
 solo quello, e si entra col **codice di 6 cifre**. L'elenco di chi usa l'app non
 sta lì in bella vista — con un reparto intero sarebbe una lista di nomi aperta a
 chiunque conosca l'indirizzo. La prima volta ci si registra: nome e codice, e da

@@ -344,6 +344,12 @@
   .login-wrap { min-height: 100dvh; display: flex; align-items: center; justify-content: center; padding: 24px; }
   .login-box { width: min(92vw, 380px); text-align: center; }
   .login-box .logo { font-size: 3rem; margin-bottom: 8px; }
+  .login-box .marchio { display: block; margin: 0 auto 14px; }
+  .login-box .pitch { line-height: 1.5; margin-bottom: 22px; }
+  .login-box .sottotitolo { font-size: 1.05rem; margin-bottom: 6px; }
+  .login-box .chisei {
+    color: var(--text); font-size: .92rem; font-weight: 600; margin-bottom: 10px;
+  }
   .login-box h1 { margin-bottom: 4px; }
   .login-box p { color: var(--muted); font-size: .9rem; margin-bottom: 20px; }
   .login-box form { display: flex; flex-direction: column; gap: 12px; text-align: left; }
@@ -510,6 +516,14 @@ function showWho(state, name = "") {
   show("whoami");
 }
 
+// La prima cosa che si vede non è una domanda: è cos'è questa roba.
+const presentazione = () => `
+  <img class="marchio" src="icon.svg" alt="" width="76" height="76">
+  <h1>Demo interattive</h1>
+  <p class="pitch">Una raccolta di demo brevi da fare durante le interazioni:
+    cosa dire al cliente, passo per passo, e i vantaggi con cui si chiude.<br>
+    Scopri quelle che non conosci, tieni sottomano le tue preferite, proponi la tua.</p>`;
+
 function renderWho() {
   const box = $("#who-box");
 
@@ -556,8 +570,8 @@ function renderWho() {
 
   if (whoState === "register") {
     box.innerHTML = `
-      <div class="logo">👋</div>
-      <h1>Registrati</h1>
+      ${persons.length ? `<div class="logo">👋</div><h1>Registrati</h1>`
+        : `${presentazione()}<h2 class="sottotitolo">Registrati</h2>`}
       <p>Il nome finisce accanto alle demo che fai. Il codice di 6 cifre ti serve
         per ritrovarti da un altro telefono: scegline uno che ricordi.</p>
       <form id="who-form">
@@ -595,9 +609,10 @@ function renderWho() {
   // pick — l'elenco di chi usa l'app non sta lì in bella vista: si scrivono
   // le prime lettere del proprio nome e compare solo quello che serve
   box.innerHTML = `
-    <div class="logo">👋</div>
-    <h1>Chi sei?</h1>
-    <p>${persons.length ? "Scrivi le prime lettere del tuo nome." : "Nessuno si è ancora registrato: comincia tu."}</p>
+    ${presentazione()}
+    <p class="chisei">${persons.length
+      ? "Chi sei? Scrivi le prime lettere del tuo nome."
+      : "Nessuno si è ancora registrato: comincia tu."}</p>
     ${persons.length ? `<input type="search" id="who-cerca" placeholder="Il tuo nome"
       autocomplete="off" autocapitalize="words" enterkeyhint="go">
       <div class="who-list" id="who-trovati"></div>` : ""}
