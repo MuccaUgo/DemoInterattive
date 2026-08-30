@@ -109,9 +109,14 @@
   .badge.off { background: var(--line); color: var(--muted); }
   .section-head { display: flex; justify-content: space-between; align-items: center; margin: 6px 2px 12px; }
   .section-head h2 { font-size: 1.05rem; letter-spacing: -.01em; }
-  .cat-head {
-    margin: 18px 4px 8px; font-size: .82rem; font-weight: 700;
-    color: var(--muted); text-transform: uppercase; letter-spacing: .05em;
+  .ordina {
+    display: flex; align-items: center; justify-content: flex-end;
+    gap: 8px; margin: 0 2px 12px;
+  }
+  .ordina label { font-size: .78rem; color: var(--muted); }
+  .ordina select {
+    width: auto; padding: 6px 10px; font-size: .82rem; font-weight: 600;
+    border-radius: 999px; background: var(--card);
   }
   .avviso {
     display: block; width: 100%; text-align: left;
@@ -182,6 +187,9 @@
   .chips { display: flex; flex-wrap: wrap; gap: 6px; }
   .filters { margin-bottom: 12px; overflow-x: auto; flex-wrap: nowrap; padding-bottom: 2px; }
   .tagpick .fchip { padding: 6px 11px; font-size: .8rem; }
+  .pick-nuovo { display: flex; gap: 6px; margin-top: 8px; }
+  .pick-nuovo input { flex: 1; padding: 7px 12px; font-size: .85rem; border-radius: 999px; }
+  .pick-nuovo button { flex: none; padding: 7px 14px; }
   .tag-nota { margin-top: 7px; }
   .tag-nota b { color: var(--accent); }
   .fchip {
@@ -210,6 +218,12 @@
   .dmeta span.lev-avanzata { background: rgba(211, 63, 73, .14); color: var(--danger); }
   .dmeta span.lev-media { background: var(--warn-soft); color: var(--warn); }
   .dmeta span.fav { background: rgba(240, 165, 0, .16); color: #a06f00; }
+  /* a chi sta bene: contornate, così non si confondono con la durata,
+     che è pure lei del colore dell'accento ma piena */
+  .dmeta span.chi {
+    background: transparent; color: var(--accent);
+    box-shadow: inset 0 0 0 1px var(--accent-soft);
+  }
   .edit-chip {
     margin-left: auto; background: none; border: 1px solid var(--line);
     border-radius: 999px; padding: 3px 9px; font-size: .78rem; line-height: 1;
@@ -410,6 +424,11 @@ const TAGS = ["iPhone", "iPad", "Mac", "Apple Watch", "AirPods",
 // Finché la colonna tags non c'è, i tag stanno tutti in category, separati
 // così: l'app funziona uguale prima e dopo la migrazione (vedi tags.sql).
 const TAG_SEP = " · ";
+// Anche "a chi sta bene" si sceglie, non si scrive: due persone diverse
+// scrivevano la stessa cosa in due modi, e la ricerca non le trovava.
+const CLIENTI = ["Chiunque", "Chi è alle prime armi", "Famiglia", "Studente",
+  "Professionista", "Chi crea contenuti", "Chi compra e vende online", "Chi viaggia",
+  "Disabilità visiva", "Disabilità uditiva", "Disabilità motoria", "Dislessia e lettura"];
 const DURATIONS = ["lampo", "breve", "completa"];
 const DUR_HINT = { lampo: "30 secondi", breve: "2 minuti", completa: "5 minuti" };
 const DUR_TEMPO = { lampo: "30 s", breve: "2 min", completa: "5 min" };
@@ -425,6 +444,18 @@ let meId = localStorage.getItem("demo-person-id") || "";
 let whoState = "pick", whoName = "";   // schermata di registrazione/accesso
 let openIds = new Set();     // schede aperte nell'elenco
 let catFilter = "tutte";
+// Le categorie in cima non ci sono più: ci sono i tag, e questo decide
+// soltanto in che ordine scorrono le demo. La scelta resta sul telefono.
+const ORDINI = {
+  aggiunta: "Ordine di aggiunta",
+  caso: "A caso",
+  fatte: "Le più fatte",
+  preferite: "Le più preferite",
+};
+let ordine = ORDINI[localStorage.getItem("demo-ordine")] ? localStorage.getItem("demo-ordine") : "aggiunta";
+// il seme cambia a ogni apertura dell'app: "a caso" mescola davvero, ma
+// resta fermo mentre cerchi e filtri, che sennò le schede ballano sotto le dita
+let semeCaso = Math.random().toString(36).slice(2);
 let query = "";
 let editingId = null;        // la demo aperta nella scheda "Crea"
 let hasTags = false;         // la colonna tags esiste già sul database?
@@ -664,12 +695,22 @@ async function refresh() { await loadAll(); render(); }
 // ── Letture ─────────────────────────────────────────────────
 const runsOf = (id) => runs.filter(r => r.demo_id === id);
 const lastRun = (id) => { const a = runsOf(id); return a.length ? a[a.length - 1] : null; };
-const recentRuns = (id, days = 30) => runsOf(id).filter(r => r.created_at >= daysAgo(days)).length;
 const demoOf = (id) => demos.find(d => d.id === id) || null;
 const stepsOf = (d) => Array.isArray(d?.steps) ? d.steps : [];
 const tagsOf = (d) => Array.isArray(d?.tags) && d.tags.length ? d.tags
   : (d?.category ? d.category.split(TAG_SEP).map(t => t.trim()).filter(Boolean) : []);
 const tagPrinc = (d) => tagsOf(d)[0] || "Altro";
+const clientiOf = (d) => d?.who ? d.who.split(TAG_SEP).map(t => t.trim()).filter(Boolean) : [];
+// L'elenco delle targhette non è chiuso: quelle di partenza, più tutte
+// quelle che il team ha inventato scrivendo le demo.
+const unione = (base, prese) => {
+  const extra = [...new Set(prese)].filter(t => !base.includes(t)).sort((a, b) => a.localeCompare(b));
+  return [...base, ...extra];
+};
+const tuttiTag = () => unione(TAGS, demos.flatMap(tagsOf));
+const tuttiClienti = () => unione(CLIENTI, demos.flatMap(clientiOf));
+// un "·" dentro una targhetta spezzerebbe l'elenco: si scrive senza
+const pulisciTag = (t) => t.replace(/[·|]/g, " ").replace(/\s+/g, " ").trim().slice(0, 28);
 const benefitsOf = (d) => Array.isArray(d?.benefits) ? d.benefits : [];
 // Le pubblicate le vedono tutti; le proposte solo chi le ha scritte e gli
 // amministratori; le ritirate restano agli amministratori.
@@ -702,12 +743,30 @@ const segnalAperte = () => segnal.filter(s => s.status === "aperta"
 
 // L'ordine dell'elenco: prima le pronte, poi le bozze; a parità,
 // quelle usate di recente più in alto.
+const perAggiunta = (a, b) =>
+  ((a.position || 0) - (b.position || 0)) ||
+  ((a.created_at || "") < (b.created_at || "") ? -1 : 1);
+
+// Un numero stabile per ogni demo, che cambia solo quando cambia il seme.
+// Serve che due id vicini finiscano lontanissimi, sennò "a caso" restituisce
+// quasi sempre la stessa fila: FNV-1a più il rimescolo finale di murmur3.
+const numeroCaso = (id) => {
+  let h = 2166136261;
+  const s = id + semeCaso;
+  for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619); }
+  h ^= h >>> 16; h = Math.imul(h, 2246822507);
+  h ^= h >>> 13; h = Math.imul(h, 3266489909);
+  return (h ^ (h >>> 16)) >>> 0;
+};
+
 function catalogSorted(list) {
-  return list.slice().sort((a, b) =>
-    ((a.status === "pronta" ? 0 : 1) - (b.status === "pronta" ? 0 : 1)) ||
-    (recentRuns(b.id) - recentRuns(a.id)) ||
-    ((a.position || 0) - (b.position || 0)) ||
-    a.name.localeCompare(b.name));
+  const l = list.slice();
+  if (ordine === "caso") return l.sort((a, b) => numeroCaso(a.id) - numeroCaso(b.id));
+  if (ordine === "fatte") return l.sort((a, b) =>
+    (runsOf(b.id).length - runsOf(a.id).length) || perAggiunta(a, b));
+  if (ordine === "preferite") return l.sort((a, b) =>
+    (favCount(b.id) - favCount(a.id)) || perAggiunta(a, b));
+  return l.sort(perAggiunta);
 }
 
 // ── Navigazione ─────────────────────────────────────────────
@@ -765,7 +824,7 @@ function render() {
 }
 
 // ── Scheda di una demo ──────────────────────────────────────
-function demoCard(d, conCategoria = false) {
+function demoCard(d) {
   const open = openIds.has(d.id);
   const n = runsOf(d.id).length;
   const last = lastRun(d.id);
@@ -774,7 +833,7 @@ function demoCard(d, conCategoria = false) {
   const fav = isFav(d.id);
   const inCorso = d.status === "bozza" || d.status === "rifiutata";
   const summary = [
-    inCorso && d.created_by ? `proposta da ${d.created_by}` : (d.who || null),
+    inCorso && d.created_by ? `proposta da ${d.created_by}` : null,
     n ? `fatta ${n} volt${n === 1 ? "a" : "e"}` : "mai fatta",
     !inCorso && last ? `ultima: ${last.actor_name}` : null,
   ].filter(Boolean).join(" · ");
@@ -793,8 +852,8 @@ function demoCard(d, conCategoria = false) {
       <span class="badge ${STATO_CLASSE[d.status] || ""}">${STATO[d.status] || d.status}</span>
     </div>
     <div class="dmeta">
-      ${(conCategoria ? tagsOf(d) : tagsOf(d).slice(1))
-        .map(t => `<span>${esc(t)}</span>`).join("")}
+      ${tagsOf(d).map(t => `<span>${esc(t)}</span>`).join("")}
+      ${clientiOf(d).map(t => `<span class="chi">${esc(t)}</span>`).join("")}
       <span class="dur">${DUR_TEMPO[d.duration] || esc(d.duration)}</span>
       <span class="lev-${esc(d.level)}">${esc(d.level)}</span>
       ${favCount(d.id) ? `<span class="fav">★ ${favCount(d.id)}</span>` : ""}
@@ -809,8 +868,6 @@ function demoCard(d, conCategoria = false) {
       <div class="dbens-t">Cosa ci guadagna il cliente</div>
       ${bens.map(b => `<div class="dben"><i>✓</i><span>${esc(b)}</span></div>`).join("")}
     </div>` : ""}
-    ${d.needs ? `<div class="dline">🧰 <b>Serve:</b> ${esc(d.needs)}</div>` : ""}
-    ${d.owner ? `<div class="dline">👤 <b>La cura:</b> ${esc(d.owner)}</div>` : ""}
     ${d.created_by ? `<div class="dline">✍️ <b>Proposta da:</b> ${esc(d.created_by)}</div>` : ""}
     ${d.review_note ? `<div class="verdetto ${d.status === "rifiutata" ? "no" : ""}">
       <b>${d.status === "rifiutata" ? "Non pubblicata" : "Nota dell'amministratore"}</b>
@@ -985,16 +1042,8 @@ function renderElenco(main) {
     .filter(d => !query || (d.name + " " + (d.hook || "") + " " + (d.who || "") + " "
       + stepsOf(d).join(" ") + " " + benefitsOf(d).join(" ") + " " + tagsOf(d).join(" "))
       .toLowerCase().includes(query.toLowerCase()));
-  const used = TAGS.filter(t => inCatalog().some(d => tagsOf(d).includes(t)));
+  const used = tuttiTag().filter(t => inCatalog().some(d => tagsOf(d).includes(t)));
   const sorted = catalogSorted(list);
-
-  // Raggruppate per prodotto: sul reparto si cerca così, non per nome.
-  const groups = [];
-  for (const d of sorted) {
-    const g = groups.find(x => x.cat === tagPrinc(d));
-    if (g) g.items.push(d); else groups.push({ cat: tagPrinc(d), items: [d] });
-  }
-
   const attesa = daApprovare().length;
   const aperte = segnalAperte().length;
   const daFare = [
@@ -1016,10 +1065,23 @@ function renderElenco(main) {
         aria-pressed="${catFilter === "segnalate"}">Segnalate · ${aperte}</button>` : ""}
       ${used.map(c => `<button type="button" class="fchip" data-cat="${esc(c)}" aria-pressed="${catFilter === c}">${esc(c)}</button>`).join("")}
     </div>
-    ${groups.map(g => `<div class="cat-head">${esc(g.cat)}</div>${g.items.map(d => demoCard(d)).join("")}`).join("")}
+    <div class="ordina">
+      <label for="ord">Ordina</label>
+      <select id="ord">${Object.entries(ORDINI).map(([k, v]) =>
+        `<option value="${k}" ${ordine === k ? "selected" : ""}>${v}</option>`).join("")}</select>
+    </div>
+    ${sorted.map(d => demoCard(d)).join("")}
     ${sorted.length ? "" : `<div class="empty">Nessuna demo qui.<br>${query || catFilter !== "tutte" ? "Prova a togliere il filtro." : "Scrivi la prima con “+ Crea”."}</div>`}`;
 
   $("#go-crea").onclick = () => goTab("crea", { editing: null });
+  const ord = $("#ord");
+  ord.onchange = () => {
+    ordine = ord.value;
+    localStorage.setItem("demo-ordine", ordine);
+    // riscegliere "a caso" quando c'è già vuol dire rimescolare
+    semeCaso = Math.random().toString(36).slice(2);
+    render();
+  };
   const coda_btn = $("#vai-coda");
   if (coda_btn) coda_btn.onclick = () => {
     catFilter = attesa ? "da-approvare" : "segnalate";
@@ -1055,13 +1117,80 @@ function renderPreferite(main) {
     <div class="section-head"><h2>Le tue preferite</h2></div>
     <div class="sub" style="margin:0 4px 14px">Le demo che vuoi avere sottomano: quelle che ti riescono
       bene e quelle che stai imparando.</div>
-    ${sorted.length ? sorted.map(d => demoCard(d, true)).join("")
+    ${sorted.length ? sorted.map(d => demoCard(d)).join("")
       : `<div class="empty">Ancora nessuna preferita.<br>Nell'elenco, tocca la stella accanto al nome di una demo.</div>`}`;
 
   wireCards(main);
 }
 
 // ── Crea la demo ────────────────────────────────────────────
+// Targhette da accendere e spegnere: le usano sia i tag della demo sia i
+// clienti a cui sta bene. Restano nell'ordine in cui le tocchi, e viaggiano
+// in un campo nascosto, così il salvataggio le legge come tutto il resto.
+function pickerHtml(id, valori, scelti, name, invito) {
+  return `<div class="picker" id="${id}">
+    <div class="chips tagpick">
+      ${valori.map(v => `<button type="button" class="fchip" data-pick="${esc(v)}"
+        aria-pressed="false">${esc(v)}</button>`).join("")}
+    </div>
+    <div class="pick-nuovo">
+      <input type="text" data-nuovo placeholder="${esc(invito)}" maxlength="28">
+      <button type="button" class="ghost small" data-aggiungi>+</button>
+    </div>
+    <input type="hidden" name="${name}" value="${esc(JSON.stringify(scelti))}">
+  </div>`;
+}
+
+function wirePicker(form, id) {
+  const root = form.querySelector("#" + id);
+  const box = root.querySelector(".chips");
+  const hidden = root.querySelector("input[type=hidden]");
+  const leggi = () => { try { return JSON.parse(hidden.value) || []; } catch { return []; } };
+  const disegna = () => {
+    const cur = leggi();
+    box.querySelectorAll("[data-pick]").forEach(b =>
+      b.setAttribute("aria-pressed", cur.includes(b.dataset.pick)));
+  };
+  const accendi = (b) => {
+    b.onclick = () => {
+      const cur = leggi(), v = b.dataset.pick;
+      hidden.value = JSON.stringify(cur.includes(v) ? cur.filter(x => x !== v) : [...cur, v]);
+      disegna();
+    };
+  };
+  box.querySelectorAll("[data-pick]").forEach(accendi);
+
+  // se la targhetta che serve non c'è, la si scrive: nasce già accesa e da
+  // qui in poi la trovano anche gli altri, perché il modulo la ripesca
+  // da quello che il team ha già scritto
+  const campo = root.querySelector("[data-nuovo]");
+  const aggiungi = () => {
+    const v = pulisciTag(campo.value);
+    campo.value = "";
+    if (!v) return;
+    const gia = [...box.querySelectorAll("[data-pick]")]
+      .find(b => b.dataset.pick.toLowerCase() === v.toLowerCase());
+    const nome = gia ? gia.dataset.pick : v;
+    if (!gia) {
+      const b = document.createElement("button");
+      b.type = "button"; b.className = "fchip"; b.dataset.pick = v; b.textContent = v;
+      box.appendChild(b); accendi(b);
+    }
+    const cur = leggi();
+    if (!cur.includes(nome)) hidden.value = JSON.stringify([...cur, nome]);
+    disegna();
+  };
+  root.querySelector("[data-aggiungi]").onclick = aggiungi;
+  campo.onkeydown = (e) => {
+    if (e.key !== "Enter") return;
+    e.preventDefault();   // sennò Invio manda avanti tutto il modulo
+    aggiungi();
+  };
+
+  disegna();
+  return leggi;
+}
+
 function stepRow(value = "") {
   return `<div class="step-ed">
     <i></i>
@@ -1097,13 +1226,8 @@ function renderCrea(main) {
         <div class="field" style="margin-top:0"><label>Nome della demo *</label>
           <input type="text" name="name" value="${esc(d?.name || "")}" placeholder="es. Ripulisci in Foto" required></div>
         <div class="field"><label>Tag</label>
-          <div class="chips tagpick" id="tagpick">
-            ${TAGS.map(t => `<button type="button" class="fchip" data-tag="${esc(t)}"
-              aria-pressed="false">${esc(t)}</button>`).join("")}
-          </div>
-          <input type="hidden" name="tags" value="${esc(JSON.stringify(tagsOf(d)))}">
-          <div class="sub tag-nota">Quanti ne servono. Nell'elenco la demo finisce
-            sotto il primo che scegli: <b id="tag-princ">—</b></div></div>
+          ${pickerHtml("tagpick", unione(tuttiTag(), tagsOf(d)), tagsOf(d), "tags", "Aggiungi un tag")}
+          <div class="sub tag-nota">Quanti ne servono: filtri e ricerca li guardano tutti.</div></div>
         <div class="row" style="gap:8px">
           <div class="field" style="flex:1;min-width:130px"><label>Quanto dura</label>
             <select name="duration">${opt("duration", DURATIONS, d?.duration || "breve")}</select></div>
@@ -1118,8 +1242,7 @@ function renderCrea(main) {
           <input type="text" name="hook" value="${esc(d?.hook || "")}"
             placeholder="es. Hai già l'iPhone? Guarda cosa fa adesso."></div>
         <div class="field"><label>A quale cliente sta bene</label>
-          <input type="text" name="who" value="${esc(d?.who || "")}"
-            placeholder="es. chi entra a curiosare, senza un modello in mente"></div>
+          ${pickerHtml("chipick", unione(tuttiClienti(), clientiOf(d)), clientiOf(d), "who", "Aggiungi un tipo di cliente")}</div>
       </div>
 
       <div class="card">
@@ -1142,13 +1265,8 @@ function renderCrea(main) {
       </div>
 
       <div class="card">
-        <h3>Il contorno</h3>
-        <div class="field"><label>Cosa serve prima di iniziare</label>
-          <input type="text" name="needs" value="${esc(d?.needs || "")}"
-            placeholder="es. un iPhone demo con qualche foto"></div>
-        <div class="field"><label>Chi la cura</label>
-          <input type="text" name="owner" value="${esc(d?.owner ?? (d ? "" : me))}" placeholder="es. ${esc(me)}"></div>
-        ${isAdmin() ? `<div class="field"><label>Stato</label>
+        <h3>Prima di finire</h3>
+        ${isAdmin() ? `<div class="field" style="margin-top:0"><label>Stato</label>
           <select name="status">
             <option value="bozza" ${!d || d.status === "bozza" ? "selected" : ""}>Da approvare · non ancora pubblicata</option>
             <option value="pronta" ${d?.status === "pronta" ? "selected" : ""}>Pubblicata · la vedono tutti</option>
@@ -1182,24 +1300,8 @@ function renderCrea(main) {
     wireList(box);
     box.querySelector(".step-ed:last-child input").focus();
   };
-  // i tag si accendono e si spengono, e restano nell'ordine in cui li tocchi:
-  // il primo è quello che fa da titolo di gruppo nell'elenco
-  const tagBox = $("#tagpick"), tagHidden = form.querySelector("[name=tags]");
-  const tagScelti = () => { try { return JSON.parse(tagHidden.value) || []; } catch { return []; } };
-  const disegnaTag = () => {
-    const cur = tagScelti();
-    tagBox.querySelectorAll("[data-tag]").forEach(b =>
-      b.setAttribute("aria-pressed", cur.includes(b.dataset.tag)));
-    $("#tag-princ").textContent = cur[0] || "—";
-  };
-  tagBox.querySelectorAll("[data-tag]").forEach(b => {
-    b.onclick = () => {
-      const cur = tagScelti(), t = b.dataset.tag;
-      tagHidden.value = JSON.stringify(cur.includes(t) ? cur.filter(x => x !== t) : [...cur, t]);
-      disegnaTag();
-    };
-  });
-  disegnaTag();
+  const tagScelti = wirePicker(form, "tagpick");
+  const chiScelti = wirePicker(form, "chipick");
 
   const stepsEd = $("#steps-ed"), bensEd = $("#bens-ed");
   wireList(stepsEd); wireList(bensEd);
@@ -1218,19 +1320,19 @@ function renderCrea(main) {
   form.onsubmit = async (e) => {
     e.preventDefault();
     const fd = new FormData(form);
-    const tags = tagScelti().filter(t => TAGS.includes(t));
+    const ripulisci = (l) => [...new Set(l.map(pulisciTag).filter(Boolean))];
+    const tags = ripulisci(tagScelti());
+    const chi = ripulisci(chiScelti());
     const row = {
       name: (fd.get("name") || "").trim(),
       // finché la colonna tags non c'è, i tag viaggiano dentro category
       category: tags.join(TAG_SEP),
       hook: (fd.get("hook") || "").trim() || null,
-      who: (fd.get("who") || "").trim() || null,
+      who: chi.join(TAG_SEP) || null,
       duration: fd.get("duration"),
       level: fd.get("level"),
       steps: fd.getAll("step").map(s => s.trim()).filter(Boolean),
       benefits: fd.getAll("benefit").map(s => s.trim()).filter(Boolean),
-      needs: (fd.get("needs") || "").trim() || null,
-      owner: (fd.get("owner") || "").trim() || null,
       // solo un amministratore decide lo stato: agli altri resta la proposta
       // una proposta rifiutata, se la si corregge, torna in coda da sola
       status: isAdmin() ? fd.get("status")
