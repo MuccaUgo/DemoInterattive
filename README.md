@@ -1,7 +1,7 @@
 # Demo Interattive
 
 Il catalogo delle demo da fare in store: cosa mostrare, a chi, con quale frase
-si apre, **i passaggi da dire al cliente** e i vantaggi con cui si chiude.
+si apre, **cosa provare a dire**, passo per passo, e perché la demo è utile.
 E il registro di quelle che vengono fatte davvero, per sapere quali vivono in
 reparto e quali restano solo scritte.
 
@@ -12,14 +12,18 @@ Sito a sé, database a sé. Sta accanto a **Store Tasks**, non dentro.
 - **Elenco** — una lista sola, con ricerca (nome, frase di apertura, cliente,
   passi, vantaggi, tag), i filtri per tag e la scelta di come ordinarla. Ogni scheda si apre sui passaggi
   numerati, scritti come si dicono davvero: *“Chiedi al cliente di tenere premuto
-  il tasto Controllo fotocamera”*. In fondo, **cosa ci guadagna il cliente**.
+  il tasto Controllo fotocamera”*. In fondo, **perché è utile**.
 - **Preferite** — la stella accanto al nome. Personali, legate al profilo: le
   demo che vuoi avere sottomano, non una classifica.
-- **Crea la demo** — modulo a tutta pagina: cos'è (nome e tag), come si attacca
-  (la frase di apertura e a chi sta bene), i passaggi (pochi e chiari, si
-  aggiungono uno alla volta) e i vantaggi. Lo stesso modulo serve per le
-  modifiche. Quanto dura e quanto è difficile non si scelgono: una demo
-  interattiva è breve e facile, sennò in reparto non si fa.
+- **Crea la demo** — modulo a tutta pagina, nelle stesse tre parti in cui si
+  legge una scheda: *Esempio di approccio* (la frase con cui si apre e a chi sta
+  bene), *Prova a dire* (i passaggi, pochi e chiari, uno alla volta) e *Perché è
+  utile*. Ogni riquadro di testo cresce mentre scrivi e si ferma a 200 caratteri:
+  un passaggio lungo non si dice a voce. In fondo, per un amministratore, lo
+  stato e chi l'ha proposta — che si può girare a chi la demo l'ha pensata
+  davvero. Lo stesso modulo serve per le modifiche. Quanto dura e quanto è
+  difficile non si scelgono: una demo interattiva è breve e facile, sennò in
+  reparto non si fa.
 - **Profilo** — il tuo nome e il tuo codice, quante demo hai fatto, quelle che
   fai più spesso, le tue ultime, e come sta il catalogo del team.
 
