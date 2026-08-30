@@ -9,15 +9,16 @@ Sito a sé, database a sé. Sta accanto a **Store Tasks**, non dentro.
 
 ## Le quattro sezioni
 
-- **Elenco** — le demo raggruppate per tag, con ricerca (nome, frase di
-  apertura, cliente, passi, vantaggi, tag) e filtri. Ogni scheda si apre sui passaggi
+- **Elenco** — una lista sola, con ricerca (nome, frase di apertura, cliente,
+  passi, vantaggi, tag), i filtri per tag e la scelta di come ordinarla. Ogni scheda si apre sui passaggi
   numerati, scritti come si dicono davvero: *“Chiedi al cliente di tenere premuto
   il tasto Controllo fotocamera”*. In fondo, **cosa ci guadagna il cliente**.
 - **Preferite** — la stella accanto al nome. Personali, legate al profilo: le
   demo che vuoi avere sottomano, non una classifica.
-- **Crea la demo** — modulo a tutta pagina: cos'è, come si attacca, i passaggi
-  (pochi e chiari, si aggiungono uno alla volta), i vantaggi, il contorno. Lo
-  stesso modulo serve per le modifiche.
+- **Crea la demo** — modulo a tutta pagina: cos'è (nome e tag), come si attacca
+  (la frase di apertura e a chi sta bene), i passaggi (pochi e chiari, si
+  aggiungono uno alla volta) e i vantaggi. Lo stesso modulo serve per le
+  modifiche.
 - **Profilo** — il tuo nome e il tuo codice, quante demo hai fatto, quelle che
   fai più spesso, le tue ultime, e come sta il catalogo del team.
 
@@ -38,12 +39,35 @@ toccandoli, nel modulo di creazione:
 > Accessibilità · Fotocamera e Foto · Tastiera e testo · Continuity ·
 > Telefono e contatti · Organizzazione · Salute e movimento · Altro
 
-Restano nell'ordine in cui li tocchi, e **il primo** è quello sotto cui la demo
-finisce nell'elenco — il modulo lo dice mentre scegli. I filtri in cima
-all'elenco e la ricerca li guardano tutti, non solo il primo.
+Restano nell'ordine in cui li tocchi, e i filtri in cima all'elenco e la ricerca
+li guardano tutti. Sulla scheda compaiono tutti.
 
-Sulla scheda compaiono gli altri tag, quelli che il titolo del gruppo non dice
-già.
+Anche **a chi sta bene** una demo si sceglie invece di scriverlo, dallo stesso
+tipo di targhette:
+
+> Chiunque · Chi è alle prime armi · Famiglia · Studente · Professionista ·
+> Chi crea contenuti · Chi compra e vende online · Chi viaggia ·
+> Disabilità visiva · Disabilità uditiva · Disabilità motoria ·
+> Dislessia e lettura
+
+**Se la targhetta che serve non c'è, la si scrive** — nel campo sotto le
+targhette, in tutt'e due gli elenchi. Nasce già accesa, e da lì in poi la
+ritrovano anche gli altri: il modulo ripesca tutte quelle che il team ha già
+usato, e diventano anche filtri nell'elenco. Il `·` che separa le targhette non
+può finire dentro una targhetta.
+
+## Come si ordina l'elenco
+
+Niente più categorie in cima: ci sono i tag. L'elenco è una lista sola, e sopra
+alle schede si sceglie in che ordine scorre:
+
+- **Ordine di aggiunta** — come sono state scritte, dalla prima all'ultima.
+- **A caso** — mescolate. Il mescolo cambia a ogni apertura dell'app (e
+  riscegliendo *A caso*), ma resta fermo mentre cerchi e filtri.
+- **Le più fatte** — quelle che il team fa davvero in reparto.
+- **Le più preferite** — quelle con più stelle, contando quelle di tutti.
+
+La scelta resta sul telefono.
 
 ## Come si entra
 

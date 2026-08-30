@@ -37,13 +37,18 @@ create table if not exists public.demos (
                                              -- Tastiera e testo · Continuity · Telefono e contatti ·
                                              -- Organizzazione · Salute e movimento · Altro
   hook text,                                 -- la frase con cui si apre
-  who text,                                  -- a quale cliente sta bene
+  who text,                                  -- a chi sta bene: i tipi di cliente, uniti da " · ".
+                                             -- Chiunque · Chi è alle prime armi · Famiglia · Studente ·
+                                             -- Professionista · Chi crea contenuti ·
+                                             -- Chi compra e vende online · Chi viaggia ·
+                                             -- Disabilità visiva · uditiva · motoria · Dislessia e lettura
   duration text not null default 'breve',    -- lampo · breve · completa
   level text not null default 'facile',      -- facile · media · avanzata
   steps jsonb not null default '[]'::jsonb,  -- i passaggi da dire al cliente, in ordine
-  needs text,                                -- cosa serve prima di iniziare
+  needs text,                                -- non si scrive più dall'app: quello che serve
+                                             -- sta nel primo passaggio della demo
   benefits jsonb not null default '[]'::jsonb, -- i vantaggi con cui si chiude
-  owner text,                                -- chi tiene aggiornata la scheda
+  owner text,                                -- non si scrive più dall'app (resta chi l'ha proposta)
   status text not null default 'bozza',      -- bozza (proposta, in attesa) ·
                                              -- pronta (pubblicata) · ritirata
   created_by text,                           -- chi l'ha scritta
@@ -175,7 +180,7 @@ begin
 
   ('Intelligenza visiva e annunci', 'Apple Intelligence',
    'Se dovessi rivendere quella giacca online, sapresti come descriverla?',
-   'Chi vende sui marketplace, genitori con i vestiti dei figli da rivendere',
+   'Chi compra e vende online · Famiglia',
    'lampo', 'facile',
    to_jsonb(array[
      'Prima di iniziare: da un Mac in esposizione cerca «giacca vintage» e apri l''immagine a tutto schermo',
@@ -192,7 +197,7 @@ begin
 
   ('Fotocamera con inversione colori', 'Accessibilità',
    'Ti faccio vedere come si trova quello che a occhio nudo non si vede?',
-   'Chi ha animali, chi fatica a distinguere i dettagli, chi lavora con oggetti scuri',
+   'Disabilità visiva · Chiunque',
    'breve', 'facile',
    to_jsonb(array[
      'Prima di iniziare: da un Mac in esposizione cerca «pelo scuro di cane» e apri l''immagine a tutto schermo',
@@ -209,7 +214,7 @@ begin
 
   ('Sostituzione testo', 'Tastiera e testo',
    'Quante volte al mese scrivi per intero il tuo codice fiscale?',
-   'Chi ripete sempre gli stessi dati: IBAN, codice fiscale, indirizzo, email',
+   'Professionista · Chiunque',
    'lampo', 'facile',
    to_jsonb(array[
      'Chiedi al cliente di aprire Impostazioni, poi Generali e Tastiera',
@@ -225,7 +230,7 @@ begin
 
   ('La continuità del copia e incolla', 'Continuity',
    'Ti capita di mandarti dei link da solo, per ritrovarli sul computer?',
-   'Chi ha già l''iPhone e sta guardando un Mac',
+   'Professionista · Studente',
    'breve', 'media',
    to_jsonb(array[
      'Prima di iniziare: sul Mac in esposizione apri Note e lascia una nota vuota aperta',
@@ -242,7 +247,7 @@ begin
 
   ('Intelligenza visiva in cucina', 'Apple Intelligence',
    'Hai ricette scritte a mano che non hai mai digitalizzato?',
-   'Chi cucina, chi ha ospiti con esigenze alimentari diverse',
+   'Famiglia · Chiunque',
    'breve', 'facile',
    to_jsonb(array[
      'Prima di iniziare: da un Mac o iPad in esposizione cerca «ricetta scritta a mano» e apri l''immagine a tutto schermo',
@@ -259,7 +264,7 @@ begin
 
   ('Intelligenza visiva e sneakers', 'Apple Intelligence',
    'Ti è mai capitato di vedere delle scarpe per strada e non sapere che modello fossero?',
-   'Ragazzi, chi segue le mode, chi compra online',
+   'Chi compra e vende online · Studente',
    'lampo', 'facile',
    to_jsonb(array[
      'Prima di iniziare: se il cliente non ha scarpe interessanti ai piedi, da un Mac in esposizione cerca «sneakers» e apri l''immagine a tutto schermo',
@@ -276,7 +281,7 @@ begin
 
   ('Trovare i contatti dal tastierino', 'Telefono e contatti',
    'Come cerchi un contatto quando hai fretta e una mano sola?',
-   'Chi ha la rubrica piena, chi chiama in auto o mentre cammina',
+   'Chiunque · Chi è alle prime armi',
    'lampo', 'facile',
    to_jsonb(array[
      'Chiedi al cliente di aprire Telefono e andare su Tastierino',
@@ -292,7 +297,7 @@ begin
 
   ('Promemoria condivisi', 'Organizzazione',
    'Chi fa la spesa a casa tua? E come sapete cosa manca?',
-   'Famiglie, coppie, coinquilini',
+   'Famiglia',
    'breve', 'facile',
    to_jsonb(array[
      'Chiedi al cliente di aprire Promemoria e creare un nuovo elenco',
@@ -308,7 +313,7 @@ begin
 
   ('Intelligenza visiva e alimenti', 'Apple Intelligence',
    'Quando compri online, ti chiedi mai se esiste un''alternativa più sana?',
-   'Chi fa la spesa online, chi sta attento a cosa mangia',
+   'Chi compra e vende online · Famiglia',
    'lampo', 'facile',
    to_jsonb(array[
      'Prima di iniziare: da un Mac in esposizione cerca «confezione di patatine» e apri l''immagine a tutto schermo',
@@ -325,7 +330,7 @@ begin
 
   ('Intelligenza visiva e libri', 'Apple Intelligence',
    'Quando finisci un libro che ti è piaciuto, come scegli il prossimo?',
-   'Chi legge, chi cerca un regalo',
+   'Chiunque · Studente',
    'lampo', 'facile',
    to_jsonb(array[
      'Prima di iniziare: da un Mac in esposizione cerca la copertina di un libro conosciuto e aprila a tutto schermo',
@@ -342,7 +347,7 @@ begin
 
   ('Cartelle personalizzate', 'Mac',
    'Quando apri il Finder, trovi subito quello che cerchi?',
-   'Studenti, chi lavora con tanti file, chi condivide il Mac in famiglia',
+   'Studente · Professionista · Famiglia',
    'breve', 'facile',
    to_jsonb(array[
      'Prima di iniziare: sul Mac in esposizione crea una cartella nuova sulla scrivania',
@@ -359,7 +364,7 @@ begin
 
   ('Strumenti di scrittura e l''inglese', 'Apple Intelligence',
    'Ti capita di scrivere mail in inglese e non essere sicuro di come suonano?',
-   'Studenti, chi lavora con l''estero',
+   'Studente · Professionista',
    'breve', 'media',
    to_jsonb(array[
      'Chiedi al cliente di scrivere due righe in inglese in Note o in una mail',
@@ -375,7 +380,7 @@ begin
 
   ('Intelligenza visiva e acquisti', 'Apple Intelligence',
    'Hai mai visto una poltrona in una foto senza sapere dove comprarla?',
-   'Chi arreda casa, chi salva foto di ispirazione, chi compra online',
+   'Chi compra e vende online · Famiglia',
    'lampo', 'facile',
    to_jsonb(array[
      'Prima di iniziare: da un Mac in esposizione cerca «salotto con poltrona blu» e apri l''immagine a tutto schermo',
