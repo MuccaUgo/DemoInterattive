@@ -24,8 +24,9 @@ Sito a sé, database a sé. Sta accanto a **Store Tasks**, non dentro.
   davvero. Lo stesso modulo serve per le modifiche. Quanto dura e quanto è
   difficile non si scelgono: una demo interattiva è breve e facile, sennò in
   reparto non si fa.
-- **Profilo** — il tuo nome e il tuo codice, quante demo hai fatto, quelle che
-  fai più spesso, le tue ultime, e come sta il catalogo del team.
+- **Profilo** — in cima il **QR del sito**, per passare l'app a un collega senza
+  dettargli l'indirizzo; poi il tuo nome e il tuo codice, quante demo hai fatto,
+  quelle che fai più spesso, le tue ultime, e come sta il catalogo del team.
 
 Su ogni scheda c'è **“L'ho fatta”**: com'è andata (wow · ok · fiacca) e una riga
 di commento. È in sola aggiunta: una demo fatta non si cancella.
@@ -166,7 +167,14 @@ Tabelle: `demo_people` (chi si è registrato), `demos` (le schede),
 Repository → **Settings → Pages** → Source: `main`, cartella `/ (root)`.
 Dopo circa un minuto il sito è online.
 
-### 3. Su iPhone
+### 3. Il QR
+`qr.svg` è generato una volta da `qr.py` (`pip install segno && python3 qr.py`):
+l'indirizzo non cambia, quindi non serve una libreria che lo disegni nel
+browser. `qrverif.mjs` lo rilegge **da come appare sullo schermo**, non dal
+file: se a quella misura non si aggancia, sulla scrivania non lo inquadra
+nessuno.
+
+### 4. Su iPhone
 Apri l'URL in Safari → **Condividi → Aggiungi a schermata Home**.
 
 L'icona sulla schermata Home e nell'anteprima dei link viene da `icon-180.png`:

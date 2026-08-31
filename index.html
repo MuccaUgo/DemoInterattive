@@ -324,6 +324,17 @@
   .bar i.o { background: var(--accent); }
   .bar i.f { background: var(--warn); }
   .rank-num { font-size: .78rem; color: var(--muted); font-variant-numeric: tabular-nums; flex: none; min-width: 40px; text-align: right; }
+  /* Il QR resta su fondo bianco anche al buio: un lettore che inquadra
+     un codice chiaro su fondo scuro spesso non lo aggancia. */
+  .qr-card { display: flex; align-items: center; gap: 14px; }
+  .qr {
+    flex: none; width: 120px; height: 120px; border-radius: 12px;
+    background: #fff; padding: 6px; border: 1px solid var(--line);
+  }
+  .qr-txt { min-width: 0; }
+  .qr-txt h3 { margin-bottom: 3px; }
+  .qr-txt .sub { line-height: 1.4; }
+  .qr-txt button { margin-top: 10px; }
   .t-row {
     display: flex; align-items: center; gap: 11px; padding: 9px 12px; background: var(--card);
     border: 1px solid var(--line); border-radius: 14px; margin-bottom: 6px;
@@ -457,6 +468,7 @@ import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js
 // separato, il login è lo stesso che il team già conosce.
 const SUPABASE_URL = "https://nrxnmucuwucfecnphrtf.supabase.co";
 const SUPABASE_KEY = "sb_publishable_OJnekj88Hcc4zCXVo8k9Uw_oSlwAmXm";
+const SITO = "https://muccaugo.github.io/DemoInterattive/";
 const SHARED_EMAIL = "marcocasati+storetasks@gmail.com"; // utente condiviso in Supabase Auth
 
 // La password del team all'ingresso. È false perché senza-password.sql è
@@ -1541,6 +1553,16 @@ function renderProfilo(main) {
   const topN = tue.length ? tue[0].n : 1;
 
   main.innerHTML = `
+    <div class="card qr-card">
+      <img class="qr" src="qr.svg" alt="Codice QR che porta al catalogo" width="108" height="108">
+      <div class="qr-txt">
+        <h3>Passa l'app a un collega</h3>
+        <div class="sub">Fagli inquadrare il codice: si apre il catalogo, e da lì
+          <b>Condividi → Aggiungi a schermata Home</b>.</div>
+        <button class="ghost small" id="condividi">Condividi il link</button>
+      </div>
+    </div>
+
     <div class="card">
       <div class="row spread">
         <div><h3>${esc(me)}${isAdmin() ? ` <span class="ruolo">amministratore</span>` : ""}</h3>
@@ -1617,6 +1639,21 @@ function renderProfilo(main) {
     <div class="row" style="margin-top:26px">
       <button class="ghost small" id="logout">Esci dall'app</button>
     </div>`;
+
+  // dove si può, il foglio di condivisione del telefono; sennò negli appunti
+  $("#condividi").onclick = async () => {
+    try {
+      if (navigator.share) {
+        await navigator.share({ title: "Demo interattive", url: SITO });
+        return;
+      }
+      await navigator.clipboard.writeText(SITO);
+      toast("Link copiato");
+    } catch (e) {
+      if (e && e.name === "AbortError") return;   // ha chiuso il foglio: non è un errore
+      toast(SITO);
+    }
+  };
 
   $("#edit-name").onclick = () => {
     openDialog("Come ti chiami", `
